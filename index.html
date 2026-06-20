@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pencatat Kid's Atletik · O2SN</title>
+  <link rel="icon" type="image/png" href="https://pusatprestasinasional.kemendikdasmen.go.id/uploads/event/1qKBI3kq8Nzfx3NQUfcMZ5tnWxUWQmKnauC0TZy5.png">
+  <link rel="apple-touch-icon" href="https://pusatprestasinasional.kemendikdasmen.go.id/uploads/event/1qKBI3kq8Nzfx3NQUfcMZ5tnWxUWQmKnauC0TZy5.png">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            teal:   { 50:'#F0FDFA', 100:'#CCFBF1', 200:'#99F6E4', 500:'#14B8A6',
+                      600:'#0D9488', 700:'#0F766E', 800:'#115E59', 900:'#134E4A' },
+            ink:    '#0F172A',
+            sand:   '#FAFBFC',
+            mist:   '#F4F6F8',
+            coral:  '#EA580C',
+            coral2: '#F97316',
+          },
+          fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','-apple-system','Segoe UI','sans-serif'] },
+          boxShadow: {
+            'flat': '0 1px 0 0 rgba(15,23,42,0.04)',
+            'card': '0 1px 2px 0 rgba(15,23,42,0.04), 0 1px 3px 0 rgba(15,23,42,0.06)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Supabase JS (UMD) -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+  <style>
+    :root{
+      --teal:#0F766E; --teal-600:#0D9488; --ink:#0F172A;
+      --bg:#FFFFFF;         /* main pure white */
+      --sand:#FAFBFC;       /* subtle off-white for cards/sections */
+      --mist:#F4F6F8;       /* slightly darker for visual breaks */
+      --coral:#EA580C;
+      --line:#E8ECF1;       /* softer borders */
+    }
+    html,body{
+      background:var(--bg); color:var(--ink);
+      font-family:'Inter','ui-sans-serif','system-ui','-apple-system','Segoe UI',sans-serif;
+      font-feature-settings:'cv02','cv03','cv04','cv11';   /* Inter character variants for clarity */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .num{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+    /* O2SN-style display font (condensed bold uppercase) */
+    .font-olimpiade{
+      font-family:'Bebas Neue', 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: .12em;
+      font-weight: 400;
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+    @keyframes zoomIn { from{opacity:0; transform:scale(.96)} to{opacity:1; transform:scale(1)} }
+    .a-fade  { animation: fadeIn   .35s ease-out both; }
+    .a-slide { animation: slideUp  .35s ease-out both; }
+    .a-zoom  { animation: zoomIn   .25s ease-out both; }
+
+    /* Subtle dot grid backdrop (flat, no gradient) */
+    .dot-bg{
+      background-image: radial-gradient(rgba(15,23,42,.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Leaderboard separated rows */
+    .lb-table{ border-collapse: separate; border-spacing: 0 8px; }
+
+    /* Medal pills (flat) */
+    .medal-1{ background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; }
+    .medal-2{ background:#F1F5F9; color:#334155; border:1px solid #CBD5E1; }
+    .medal-3{ background:#FED7AA; color:#9A3412; border:1px solid #FB923C; }
+
+    /* Glassmorphism rows for top-3 (public view only) */
+    .lb-table tr.glass-row td{
+      border-top:1px solid; border-bottom:1px solid;
+      padding-top:18px; padding-bottom:18px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .lb-table tr.glass-row td:first-child{ border-left:1px solid; border-radius:14px 0 0 14px; }
+    .lb-table tr.glass-row td:last-child { border-right:1px solid; border-radius:0 14px 14px 0; }
+
+    .glass-gold td{
+      background-color: rgba(254,243,199,.65) !important;
+      border-color: rgba(217,119,6,.45) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+    .glass-gold td:first-child{ box-shadow: -4px 4px 16px -4px rgba(217,119,6,.25), inset 0 1px 0 rgba(255,255,255,.6); }
+    .glass-gold td:last-child { box-shadow:  4px 4px 16px -4px rgba(217,119,6,.25), inset 0 1px 0 rgba(255,255,255,.6); }
+
+    .glass-silver td{
+      background-color: rgba(241,245,249,.7) !important;
+      border-color: rgba(100,116,139,.4) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .glass-silver td:first-child{ box-shadow: -4px 4px 16px -4px rgba(100,116,139,.22), inset 0 1px 0 rgba(255,255,255,.8); }
+    .glass-silver td:last-child { box-shadow:  4px 4px 16px -4px rgba(100,116,139,.22), inset 0 1px 0 rgba(255,255,255,.8); }
+
+    .glass-bronze td{
+      background-color: rgba(254,215,170,.6) !important;
+      border-color: rgba(194,65,12,.45) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .glass-bronze td:first-child{ box-shadow: -4px 4px 16px -4px rgba(194,65,12,.25), inset 0 1px 0 rgba(255,255,255,.55); }
+    .glass-bronze td:last-child { box-shadow:  4px 4px 16px -4px rgba(194,65,12,.25), inset 0 1px 0 rgba(255,255,255,.55); }
+
+    /* Filter pills */
+    .filter-pill{
+      padding:.55rem 1rem; border-radius:9999px; border:1px solid var(--line);
+      background:#fff; color:#475569; font-weight:700; font-size:.7rem;
+      letter-spacing:.08em; transition:all .15s; white-space:nowrap;
+    }
+    .filter-pill:hover{ border-color:var(--teal); color:var(--teal); }
+    .filter-pill.active{ background:var(--teal); border-color:var(--teal); color:#fff; }
+
+    /* Field utility */
+    .field{
+      width:100%; padding:.7rem .9rem; background:#fff;
+      border:1px solid var(--line); border-radius:.75rem;
+      font-weight:600; color:var(--ink); outline:none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field:focus{ border-color:var(--teal); box-shadow:0 0 0 3px rgba(15,118,110,.12); }
+
+    .btn-primary{
+      background:var(--teal); color:#fff; font-weight:700; letter-spacing:.05em;
+      padding:.7rem 1.25rem; border-radius:.75rem; transition:background .15s;
+    }
+    .btn-primary:hover{ background:var(--teal-600); }
+    .btn-secondary{
+      background:#fff; color:var(--ink); font-weight:700;
+      padding:.7rem 1.25rem; border-radius:.75rem; border:1px solid var(--line);
+    }
+    .btn-secondary:hover{ background:#F1F5F9; }
+    .btn-coral{ background:var(--coral); color:#fff; font-weight:700; padding:.7rem 1.25rem; border-radius:.75rem; }
+    .btn-coral:hover{ background:#C2410C; }
+
+    .card{ background:#fff; border:1px solid var(--line); border-radius:1rem; }
+
+    /* Sidebar nav buttons */
+    .nav-btn{
+      width:100%; display:flex; align-items:center; justify-content:space-between;
+      padding:.7rem .9rem; border-radius:.75rem; font-weight:700; font-size:.825rem;
+      color:#475569; background:transparent; transition:all .15s;
+    }
+    .nav-btn:hover{ background:#F1F5F9; color:var(--teal); }
+    .nav-btn.active{
+      background:var(--teal); color:#fff;
+    }
+    .nav-btn.active i{ color:#fff; }
+
+    .subnav-btn{
+      width:100%; text-align:left; padding:.55rem .9rem; border-radius:.6rem;
+      font-weight:700; font-size:.72rem; color:#64748B; letter-spacing:.06em;
+      transition:all .15s;
+    }
+    .subnav-btn:hover{ background:#F1F5F9; color:var(--teal); }
+    .subnav-btn.active{ background:#CCFBF1; color:var(--teal); }
+
+    /* Time inputs */
+    .time-input{
+      width:3rem; padding:.4rem .25rem; text-align:center;
+      font-family:ui-monospace,monospace; font-weight:700;
+      background:#0F172A; color:#5EEAD4; border-radius:.4rem; border:none; outline:none;
+    }
+    .time-input.dnf{ color:#FCA5A5; }
+
+    .dnf-toggle{
+      padding:.3rem .6rem; border-radius:.5rem; font-size:.65rem; font-weight:800;
+      letter-spacing:.1em; border:1px solid var(--line); background:#fff; color:#64748B;
+      transition:all .15s; cursor:pointer;
+    }
+    .dnf-toggle:hover{ background:#FEE2E2; color:#B91C1C; border-color:#FECACA; }
+    .dnf-toggle.active{ background:#DC2626; color:#fff; border-color:#DC2626; }
+
+    /* Running text marquee */
+    .marquee-wrap{
+      overflow:hidden; white-space:nowrap;
+      background: var(--teal);
+      color:#fff; padding:.55rem 0;
+    }
+    .marquee-track{
+      display:inline-block;
+      animation: marquee-scroll 28s linear infinite;
+      padding-left:100%;
+    }
+    .marquee-wrap:hover .marquee-track{ animation-play-state:paused; }
+    @keyframes marquee-scroll{
+      from { transform: translateX(0); }
+      to   { transform: translateX(-100%); }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:10px; height:10px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:8px; }
+    ::-webkit-scrollbar-thumb:hover { background:#94A3B8; }
+
+    /* Print */
+    @media print {
+      body * { visibility:hidden; }
+      .print-area, .print-area * { visibility:visible; }
+      .print-area { position:absolute; left:0; top:0; width:100%; }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- TOP-RIGHT STATUS / LOGIN -->
+  <div class="fixed top-4 right-4 z-[90] flex items-center gap-2">
+    <div id="cloud-status" class="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-flat pointer-events-none">
+      <span class="relative flex h-2.5 w-2.5">
+        <span id="cloud-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60"></span>
+        <span id="cloud-dot"  class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+      </span>
+      <span id="cloud-text" class="text-[10px] font-bold text-slate-600 tracking-widest">OFFLINE</span>
+      <span id="cloud-backend" class="text-[10px] font-bold text-teal-700 tracking-wider hidden">LOCAL</span>
+    </div>
+    <button id="login-btn" onclick="showLoginModal()" class="flex items-center gap-2 bg-ink text-white hover:bg-slate-700 px-3 py-2 rounded-full text-xs font-bold transition-all shadow-card">
+      <i data-lucide="lock" class="w-3.5 h-3.5"></i><span>LOGIN</span>
+    </button>
+  </div>
+
+  <div id="toast-container" class="fixed top-16 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- =============================================================== -->
+  <!-- PUBLIC VIEW                                                      -->
+  <!-- =============================================================== -->
+  <div id="public-view" class="relative dot-bg min-h-screen hidden">
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-14 a-fade">
+
+      <!-- Header -->
+      <header class="flex flex-col items-center text-center mb-12">
+        <div class="w-28 h-28 md:w-36 md:h-36 mb-5">
+          <img id="header-logo" src="" alt="Logo O2SN" class="w-full h-full object-contain"/>
+        </div>
+        <div class="font-olimpiade text-teal-700 text-lg md:text-xl mb-2">
+          OLIMPIADE OLAHRAGA SISWA NASIONAL
+        </div>
+        <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold text-ink tracking-tight leading-none">KID'S ATHLETIC</h1>
+        <p class="mt-3 text-sm md:text-base text-slate-500 font-semibold">Jenjang SD / MI / Sederajat</p>
+        <div class="mt-4 flex items-center gap-3 text-xs font-bold tracking-widest text-slate-600">
+          <span id="header-kecamatan" class="text-coral">—</span>
+          <span class="w-1 h-1 rounded-full bg-slate-400"></span>
+          <span id="header-tahun">TAHUN —</span>
+        </div>
+      </header>
+
+      <!-- Running text info -->
+      <div id="marquee-container" class="marquee-wrap rounded-xl mb-8 hidden">
+        <span class="marquee-track text-xs font-bold tracking-widest" id="marquee-text"></span>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="card p-4 md:p-5 mb-8">
+        <div class="flex flex-col gap-4">
+          <!-- Event filter -->
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 tracking-widest mb-2">PILIH NOMOR LOMBA</div>
+            <div id="public-event-filter" class="flex flex-wrap gap-2"></div>
+          </div>
+          <!-- Search -->
+          <div>
+            <div class="text-[10px] font-bold text-slate-400 tracking-widest mb-2">CARI ATLET</div>
+            <div class="relative">
+              <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+              <input id="public-search" type="text" oninput="setPublicSearch(this.value)"
+                     placeholder="Ketik nama atlet, NISN, BIB, atau asal sekolah…"
+                     class="w-full pl-10 pr-10 py-2.5 bg-sand border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-teal-700 focus:ring-2 focus:ring-teal-100 text-sm font-semibold text-ink placeholder:text-slate-400 placeholder:font-normal"/>
+              <button id="public-search-clear" onclick="clearPublicSearch()" class="hidden absolute right-2 top-1.5 p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-ink">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p id="public-search-hint" class="text-[10px] text-slate-400 font-semibold mt-1.5 hidden">
+              Menampilkan hasil pencarian — peringkat tetap mengikuti hasil resmi.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="public-leaderboards" class="space-y-10"></div>
+
+      <footer class="mt-16 pt-8 border-t border-slate-200 text-center space-y-2">
+        <p class="text-[11px] text-slate-500 font-semibold tracking-wider">
+          Update terakhir: <span id="public-updated" class="text-ink font-bold">—</span>
+        </p>
+        <p class="text-[11px] text-slate-400 font-semibold tracking-wider">
+          © 2026 KKG PJOK Provinsi DKI Jakarta &times; Gurumasakini. Hak cipta dilindungi.
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- ADMIN VIEW                                                       -->
+  <!-- =============================================================== -->
+  <div id="admin-view" class="hidden">
+    <div class="flex flex-col md:flex-row min-h-screen">
+
+      <!-- SIDEBAR -->
+      <aside class="w-full md:w-72 lg:w-80 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+        <div class="p-5 flex items-center gap-3 border-b border-slate-200">
+          <div class="w-12 h-12 flex items-center justify-center flex-shrink-0">
+            <img id="sidebar-logo" src="" alt="" class="w-full h-full object-contain"/>
+          </div>
+          <div>
+            <h1 class="text-base font-extrabold text-ink tracking-tight leading-tight">KID'S ATHLETIC</h1>
+            <p class="text-[9px] font-bold text-teal-700 tracking-widest mt-0.5">O2SN · ADMIN PANEL</p>
+          </div>
+        </div>
+
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto p-4 space-y-1"></nav>
+
+        <div class="p-4 border-t border-slate-200 space-y-2">
+          <div class="text-[10px] font-bold text-slate-400 px-2 tracking-widest">SESI ADMIN</div>
+          <button onclick="doLogout()" class="w-full flex items-center justify-center gap-2 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider transition-all">
+            <i data-lucide="log-out" class="w-4 h-4"></i> KELUAR
+          </button>
+        </div>
+      </aside>
+
+      <!-- MAIN AREA -->
+      <main class="flex-1 overflow-y-auto bg-sand">
+        <div class="max-w-6xl mx-auto p-6 md:p-10">
+
+          <!-- TAB: PESERTA -->
+          <div id="tab-peserta" class="admin-tab a-slide">
+            <div class="flex flex-col lg:flex-row justify-between gap-4 mb-6">
+              <div>
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="users" class="text-teal-700 w-7 h-7"></i> Data Peserta</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Kelola registrasi atlet — sortir per kategori</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="downloadTemplateExcel()" class="btn-secondary text-xs"><i data-lucide="download" class="w-3.5 h-3.5 inline mr-1"></i>TEMPLATE</button>
+                <input type="file" accept=".xlsx,.xls" id="upload-excel" class="hidden" onchange="handleImportExcel(event)"/>
+                <label for="upload-excel" class="btn-primary text-xs cursor-pointer inline-flex items-center gap-1.5"><i data-lucide="upload" class="w-3.5 h-3.5"></i>IMPORT EXCEL</label>
+              </div>
+            </div>
+
+            <form onsubmit="addParticipant(event)" class="card p-4 mb-5">
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+                <input type="text" id="newPartBib" placeholder="BIB" class="field md:col-span-2 num"/>
+                <input type="text" id="newPartNisn" placeholder="NISN (opsional)" class="field md:col-span-2 num" maxlength="10"/>
+                <input type="text" id="newPartName" placeholder="Nama atlet / regu" class="field md:col-span-3" required/>
+                <input type="text" id="newPartSchool" placeholder="Asal sekolah" class="field md:col-span-2"/>
+                <select id="newPartGender" class="field md:col-span-2">
+                  <option value="L">Putra (L)</option>
+                  <option value="P">Putri (P)</option>
+                </select>
+                <button type="submit" class="btn-primary md:col-span-1 text-xs flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
+              </div>
+            </form>
+
+            <div class="card overflow-hidden">
+              <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+                <div class="text-xs font-bold text-slate-500 tracking-wider">DAFTAR PESERTA — <span id="peserta-count" class="text-ink">0</span> atlet</div>
+                <div class="flex gap-1.5 text-[10px] font-bold">
+                  <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Putra <span id="count-putra">0</span></span>
+                  <span class="px-2 py-0.5 rounded-full bg-pink-50 text-pink-700 border border-pink-200">Putri <span id="count-putri">0</span></span>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-sand text-slate-500 text-[10px] tracking-widest uppercase">
+                    <tr>
+                      <th class="px-5 py-3 font-bold">#</th>
+                      <th class="px-5 py-3 font-bold">BIB</th>
+                      <th class="px-5 py-3 font-bold">Nama atlet</th>
+                      <th class="px-5 py-3 font-bold">Sekolah</th>
+                      <th class="px-5 py-3 font-bold">Kategori</th>
+                      <th class="px-5 py-3 font-bold text-center w-24">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="peserta-tbody" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: CABANG -->
+          <div id="tab-cabang" class="admin-tab hidden a-slide">
+            <div class="mb-6">
+              <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="activity" class="text-teal-700 w-7 h-7"></i> Cabang Lomba</h2>
+              <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Tambah nomor lomba — urutan tampil sesuai input</p>
+            </div>
+            <form onsubmit="addEvent(event)" class="card p-4 mb-5 flex gap-2.5">
+              <input type="text" id="newEventName" placeholder="Nama nomor lomba baru (mis. KANGA ESCAPE)" class="field flex-1" required/>
+              <button type="submit" class="btn-primary text-xs"><i data-lucide="plus" class="w-4 h-4 inline mr-1"></i>TAMBAH</button>
+            </form>
+            <div id="cabang-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          </div>
+
+          <!-- TAB: HASIL INPUT WAKTU -->
+          <div id="tab-hasil" class="admin-tab hidden a-slide">
+            <div class="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="timer" class="text-teal-700 w-7 h-7"></i> Input Hasil Waktu</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Auto-simpan saat fokus berpindah · konfirmasi sebelum overwrite</p>
+              </div>
+              <label class="flex items-center gap-2 text-xs font-bold text-slate-600 select-none cursor-pointer">
+                <input type="checkbox" id="opt-show-minute" class="w-4 h-4 accent-teal-700"/>
+                Tampilkan kolom MENIT
+              </label>
+            </div>
+            <div id="input-hasil-container"></div>
+          </div>
+
+          <!-- TAB: HASIL PERTANDINGAN -->
+          <div id="tab-hasil_pertandingan" class="admin-tab hidden a-slide">
+            <div id="subtab-rekap" class="hasil-content">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="list-ordered" class="text-teal-700 w-7 h-7"></i> Rekapitulasi Hasil</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Klasemen sementara — tie-break diputuskan di Technical Meeting</p>
+              </div>
+              <div id="admin-leaderboards" class="space-y-8"></div>
+            </div>
+
+            <div id="subtab-post" class="hasil-content hidden">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="eye" class="text-teal-700 w-7 h-7"></i> Visibilitas Publik</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Pilih kolom yang ditampilkan di halaman publik (sebelum hasil resmi)</p>
+              </div>
+              <div class="card p-6 max-w-3xl">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-rank" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">RANK</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-bib" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">BIB</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-participant" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">Nama & Sekolah</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-events" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">Waktu per cabor</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-totalTime" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">Total waktu</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 hover:bg-sand cursor-pointer">
+                    <input type="checkbox" id="col-totalPoints" class="w-4 h-4 accent-teal-700"/>
+                    <span class="text-xs font-bold text-ink">Total poin</span>
+                  </label>
+                </div>
+                <button onclick="savePublicDisplaySettings()" class="btn-primary w-full"><i data-lucide="upload-cloud" class="w-4 h-4 inline mr-1.5"></i>SIMPAN & POST KE PUBLIK</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: LAPORAN -->
+          <div id="tab-laporan" class="admin-tab hidden a-slide">
+            <div class="mb-6">
+              <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="file-text" class="text-teal-700 w-7 h-7"></i> Laporan Hasil</h2>
+              <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Cetak laporan resmi atau ekspor data Excel</p>
+            </div>
+            <div class="card p-6 flex flex-col md:flex-row gap-3">
+              <button onclick="printOfficialReport()" class="btn-primary flex-1 inline-flex items-center justify-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i>CETAK LAPORAN (PDF)</button>
+              <button onclick="downloadReportExcel()" class="btn-secondary flex-1 inline-flex items-center justify-center gap-2 text-teal-700 border-teal-200 hover:bg-teal-50"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i>EKSPOR EXCEL (.XLSX)</button>
+            </div>
+          </div>
+
+          <!-- TAB: PENGATURAN -->
+          <div id="tab-pengaturan" class="admin-tab hidden a-slide">
+            <!-- SUBTAB: KOP -->
+            <div id="subtab-kop" class="pengaturan-content">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="layout" class="text-teal-700 w-7 h-7"></i> Pengaturan Kop</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Identitas wilayah & periode kompetisi</p>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="card p-6 space-y-4">
+                  <h3 class="text-xs font-bold text-teal-700 tracking-widest">FORM IDENTITAS</h3>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">TEMPAT</label><input type="text" id="set-kecamatan" class="field" placeholder="DKI JAKARTA"/></div>
+                    <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">TAHUN</label><input type="text" id="set-tahun" class="field num"/></div>
+                  </div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ALAMAT SEKRETARIAT</label><input type="text" id="set-sekretariat" class="field"/></div>
+                  <button onclick="saveAppSettings()" class="btn-primary w-full">SIMPAN PERUBAHAN</button>
+                </div>
+                <div class="card p-6">
+                  <h3 class="text-xs font-bold text-slate-500 tracking-widest mb-4">PREVIEW</h3>
+                  <div id="prev-kop-title" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-sand">
+                    <p class="text-xs font-bold text-ink leading-relaxed">LAPORAN HASIL PERLOMBAAN</p>
+                    <p class="text-xs font-bold text-ink leading-relaxed">KID'S ATHLETIC O2SN —</p>
+                    <p class="text-xs font-bold text-ink leading-relaxed">TAHUN —</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBTAB: TTD -->
+            <div id="subtab-ttd" class="pengaturan-content hidden">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="user-check" class="text-teal-700 w-7 h-7"></i> Data Penandatangan</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Pejabat penanggung jawab laporan resmi</p>
+              </div>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="card p-6 space-y-4">
+                  <h3 class="text-xs font-bold text-teal-700 tracking-widest">FORM PEJABAT</h3>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">KETUA PELAKSANA</label><input type="text" id="set-ketua-nama" class="field"/></div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">NIP KETUA</label><input type="text" id="set-ketua-nip" class="field num"/></div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">KOORDINATOR</label><input type="text" id="set-koor-nama" class="field"/></div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">NIP KOORDINATOR</label><input type="text" id="set-koor-nip" class="field num"/></div>
+                  <button onclick="saveAppSettings()" class="btn-primary w-full">SIMPAN DATA TTD</button>
+                </div>
+                <div class="card p-6">
+                  <h3 class="text-xs font-bold text-slate-500 tracking-widest mb-6">PREVIEW TANDA TANGAN</h3>
+                  <div class="space-y-8">
+                    <div class="border-l-4 border-teal-700 pl-5">
+                      <p class="text-[10px] font-bold text-slate-500 mb-8">Ketua Pelaksana,</p>
+                      <p class="text-sm font-bold text-ink" id="prev-ketua-nama">(Belum diisi)</p>
+                      <p class="text-[10px] font-mono text-slate-500" id="prev-ketua-nip">NIP. -</p>
+                    </div>
+                    <div class="border-l-4 border-coral pl-5">
+                      <p class="text-[10px] font-bold text-slate-500 mb-8">Koordinator Cabor,</p>
+                      <p class="text-sm font-bold text-ink" id="prev-koor-nama">(Belum diisi)</p>
+                      <p class="text-[10px] font-mono text-slate-500" id="prev-koor-nip">NIP. -</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBTAB: BACKEND -->
+            <div id="subtab-backend" class="pengaturan-content hidden">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="database" class="text-teal-700 w-7 h-7"></i> Database Supabase</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Konfigurasi koneksi ke Supabase — backend cloud realtime multi-device</p>
+              </div>
+              <div class="card p-6 max-w-3xl space-y-5">
+                <div class="flex items-start gap-3 p-4 rounded-xl bg-teal-50 border border-teal-200">
+                  <i data-lucide="zap" class="w-5 h-5 text-teal-700 flex-shrink-0 mt-0.5"></i>
+                  <div class="text-xs text-teal-900 font-semibold leading-relaxed">
+                    Backend penuh Supabase. Setiap petugas menulis ke baris berbeda di tabel <span class="font-mono bg-white px-1 py-0.5 rounded">atletik_kids_scores</span> sehingga tidak ada tabrakan data antar petugas.
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <h3 class="text-xs font-bold text-teal-700 tracking-widest">KONFIGURASI SUPABASE</h3>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">PROJECT URL</label><input type="text" id="cfg-sb-url" class="field" placeholder="https://xxx.supabase.co"/></div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ANON KEY</label><input type="text" id="cfg-sb-key" class="field font-mono text-xs"/></div>
+                  <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ROOM ID (DEFAULT: main)</label><input type="text" id="cfg-sb-room" class="field" placeholder="main"/></div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                  <button onclick="saveBackendConfig()" class="btn-primary flex-1">SIMPAN & SAMBUNGKAN</button>
+                  <button onclick="testBackendConnection()" class="btn-secondary"><i data-lucide="wifi" class="w-4 h-4 inline"></i> TES KONEKSI</button>
+                </div>
+
+                <p class="text-[11px] text-slate-400 font-semibold pt-2 border-t border-slate-100">
+                  Jika koneksi Supabase gagal sementara, aplikasi otomatis menggunakan penyimpanan lokal sebagai fallback darurat sehingga input tidak hilang. Data akan sinkron kembali ketika koneksi pulih.
+                </p>
+              </div>
+            </div>
+
+            <!-- SUBTAB: RUNNING TEXT -->
+            <div id="subtab-runtext" class="pengaturan-content hidden">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="radio" class="text-teal-700 w-7 h-7"></i> Running Text</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Teks berjalan di halaman publik — untuk pengumuman, jadwal, atau informasi teknis</p>
+              </div>
+              <div class="card p-6 max-w-3xl space-y-4">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ISI TEKS <span class="text-slate-400 font-semibold normal-case">(kosongkan untuk menyembunyikan)</span></label>
+                  <textarea id="set-runtext" rows="3" placeholder="Contoh: Selamat datang di O2SN Kid's Athletic 2026 · Peserta harap berkumpul di area start 15 menit sebelum lomba · Hasil bersifat sementara · …" class="field resize-none leading-relaxed"></textarea>
+                </div>
+                <div class="flex items-center gap-3">
+                  <label class="text-[10px] font-bold text-slate-500 tracking-widest">KECEPATAN</label>
+                  <select id="set-runtext-speed" class="field w-40">
+                    <option value="40">Lambat</option>
+                    <option value="28" selected>Normal</option>
+                    <option value="16">Cepat</option>
+                  </select>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-200">
+                  <div class="text-[10px] font-bold text-slate-500 tracking-widest px-4 py-2 bg-sand border-b border-slate-200">PREVIEW</div>
+                  <div id="runtext-preview" class="marquee-wrap">
+                    <span class="marquee-track text-xs font-bold tracking-widest" id="runtext-preview-text">— preview teks berjalan —</span>
+                  </div>
+                </div>
+                <button onclick="saveRunText()" class="btn-primary w-full">SIMPAN & TAYANGKAN</button>
+              </div>
+            </div>
+
+            <!-- SUBTAB: AKUN PETUGAS -->
+            <div id="subtab-akun" class="pengaturan-content hidden">
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="users" class="text-teal-700 w-7 h-7"></i> Manajemen Akun Petugas</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Maksimal 10 akun petugas input · Petugas hanya bisa input waktu, tidak bisa ubah data peserta atau pengaturan</p>
+              </div>
+              <div class="card p-5 max-w-3xl space-y-5">
+                <form onsubmit="addPetugasAccount(event)" class="grid grid-cols-1 md:grid-cols-12 gap-2.5">
+                  <input type="text" id="new-akun-username" placeholder="Username (mis. petugas1)" class="field md:col-span-4" required/>
+                  <input type="password" id="new-akun-password" placeholder="Password (min. 6 karakter)" class="field md:col-span-4" required minlength="6"/>
+                  <input type="text" id="new-akun-nama" placeholder="Nama petugas" class="field md:col-span-3"/>
+                  <button type="submit" class="btn-primary md:col-span-1 flex items-center justify-center"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                </form>
+                <div class="text-[10px] font-bold text-slate-400 tracking-widest px-1">DAFTAR AKUN AKTIF — <span id="akun-count">0</span>/10</div>
+                <div id="akun-list" class="space-y-2"></div>
+              </div>
+            </div>
+              <div class="mb-6">
+                <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="shield" class="text-teal-700 w-7 h-7"></i> Keamanan Sistem</h2>
+                <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Password admin disimpan sebagai hash SHA-256 (tidak plaintext)</p>
+              </div>
+              <div class="card p-6 max-w-xl space-y-4">
+                <h3 class="text-xs font-bold text-coral tracking-widest">UPDATE PASSWORD ADMIN</h3>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">PASSWORD LAMA</label><input type="password" id="set-pass-old" class="field" placeholder="••••••••"/></div>
+                <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">PASSWORD BARU (MIN. 6)</label><input type="password" id="set-pass-new" class="field" placeholder="••••••••"/></div>
+                <button onclick="changeAdminPassword()" class="btn-coral w-full">UPDATE PASSWORD</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- MODALS                                                           -->
+  <!-- =============================================================== -->
+  <div id="login-modal" class="hidden fixed inset-0 bg-ink/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-sm w-full p-8 a-zoom">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-extrabold text-ink">Login Admin</h2>
+        <button onclick="hideLoginModal()" class="text-slate-400 hover:text-ink p-1 rounded-lg hover:bg-sand"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div id="login-error" class="hidden mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-lg"></div>
+      <form onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">USERNAME</label>
+          <input type="text" id="login-username" required class="field" autocomplete="username"/>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">PASSWORD</label>
+          <div class="relative">
+            <input type="password" id="login-password" required class="field pr-12" autocomplete="current-password"/>
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-teal-700">
+              <i data-lucide="eye" id="pass-eye-icon" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary w-full">MASUK</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="edit-modal" class="hidden fixed inset-0 bg-ink/40 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-8 a-zoom">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-extrabold text-ink">Edit Peserta</h2>
+        <button onclick="hideEditModal()" class="text-slate-400 hover:text-ink p-1 rounded-lg hover:bg-sand"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form onsubmit="handleUpdateParticipant(event)" class="space-y-4">
+        <input type="hidden" id="edit-id"/>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">NO BIB</label><input type="text" id="edit-bib" class="field num"/></div>
+          <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">NISN <span class="text-slate-400 font-semibold normal-case">(opsional)</span></label><input type="text" id="edit-nisn" class="field num" maxlength="10"/></div>
+        </div>
+        <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">NAMA ATLET</label><input type="text" id="edit-name" required class="field"/></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ASAL SEKOLAH</label><input type="text" id="edit-school" class="field"/></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">KATEGORI</label>
+          <select id="edit-gender" class="field"><option value="L">Putra (L)</option><option value="P">Putri (P)</option></select>
+        </div>
+        <button type="submit" class="btn-primary w-full">SIMPAN PERUBAHAN</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm modal generic -->
+  <div id="confirm-modal" class="hidden fixed inset-0 bg-ink/40 backdrop-blur-sm z-[210] flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-7 a-zoom">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-11 h-11 rounded-xl bg-coral/10 flex items-center justify-center text-coral flex-shrink-0">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+        <h2 id="confirm-modal-title" class="text-lg font-extrabold text-ink">Konfirmasi</h2>
+      </div>
+      <div id="confirm-modal-desc" class="text-sm text-slate-600 leading-relaxed mb-6"></div>
+      <div class="flex gap-2.5">
+        <button id="confirm-modal-cancel" class="btn-secondary flex-1">BATAL</button>
+        <button id="confirm-modal-ok" class="btn-coral flex-1">YA, LANJUTKAN</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =============================================================== -->
+  <!-- SCRIPT                                                           -->
+  <!-- =============================================================== -->
+  <script>
+  'use strict';
+
+  // ============================================================
+  // CONSTANTS & DEFAULTS
+  // ============================================================
+  const URL_LOGO_O2SN = "https://pusatprestasinasional.kemendikdasmen.go.id/uploads/event/1qKBI3kq8Nzfx3NQUfcMZ5tnWxUWQmKnauC0TZy5.png";
+  const URL_LOGO_KKGO = "https://raw.githubusercontent.com/djarotwidiyono22-design/KidsAtlhletic/main/KKGO.png";
+
+  // Default Supabase (dapat dioverride via Pengaturan → Backend)
+  const DEFAULT_SUPABASE_URL = "https://lcfsrzqfacbfewtwgrcp.supabase.co";
+  const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZnNyenFmYWNiZmV3dHdncmNwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMTE1OSwiZXhwIjoyMDk3NDc3MTU5fQ._Uo4KSvPhUJFWfXsbDoQjGKleTlbTLMGsA7HKwLF4Ck"; // user mengisi sendiri (anon key)
+  const DEFAULT_GAS_URL      = "";
+
+  const LS_KEY = "atletik_kids_state_v2";
+  const LS_CFG = "atletik_kids_cfg_v2";
+
+  // SHA-256 hasher (Web Crypto API)
+  async function sha256(text){
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  // Hash dari "admin" — untuk default credential
+  const DEFAULT_ADMIN_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+
+  // ============================================================
+  // STATE
+  // ============================================================
+  const state = {
+    events: [
+      { id:'e1', name:'KANGA ESCAPE', createdAt:Date.now()   },
+      { id:'e2', name:'FORMULA ONE',  createdAt:Date.now()+1 }
+    ],
+    participants: [],
+    settings: {
+      ketuaNama:'', ketuaNip:'', koorNama:'', koorNip:'',
+      kecamatan:'DKI JAKARTA', tahun:'2026',
+      sekretariat:'KKG PJOK Provinsi DKI Jakarta',
+      adminPasswordHash: DEFAULT_ADMIN_HASH,
+      accounts: [],         // [{username, passwordHash, nama, role:'petugas'}] max 10
+      runningText: '',
+      runningTextSpeed: '28',
+      publicColumns:{ rank:true, bib:true, participant:true, events:true, totalTime:true, totalPoints:true },
+      showMinuteColumn: false
+    },
+    config: {
+      backend: 'supabase',             // FULL Supabase mode (local hanya sebagai fallback darurat)
+      supabaseUrl: DEFAULT_SUPABASE_URL,
+      supabaseKey: DEFAULT_SUPABASE_KEY,
+      supabaseRoom: 'main',
+      gasUrl: DEFAULT_GAS_URL
+    },
+    ui: {
+      isLoggedIn:false,
+      role: '',          // 'admin' | 'petugas'
+      currentUser: '',   // username yang sedang login
+      activeTab:'peserta',
+      activeSubTab:'kop',
+      activeHasilSubTab:'rekap',
+      isSettingsExpanded:false,
+      isHasilExpanded:false,
+      publicEventFilter:'all',
+      publicSearch:''
+    },
+    runtime: {
+      syncTimeout:null,
+      pendingTimeChange:null,
+      pendingSyncCount:0,
+      adapter:null,
+    }
+  };
+
+  // ============================================================
+  // DATA ADAPTERS (Local | Supabase | GAS)
+  // Setiap adapter punya: connect(), load(), save(), subscribe()
+  // ============================================================
+  function LocalAdapter(){
+    return {
+      type:'local',
+      async connect(){ setCloudStatus(true,'LOCAL'); return true; },
+      async load(){
+        try{
+          const raw = localStorage.getItem(LS_KEY);
+          return raw ? JSON.parse(raw) : null;
+        }catch(_){ return null; }
+      },
+      async save(data){
+        localStorage.setItem(LS_KEY, JSON.stringify(data));
+        return true;
+      },
+      subscribe(_cb){ /* noop */ return ()=>{}; }
+    };
+  }
+
+  function SupabaseAdapter(url, key, room){
+    let client=null, channels=[];
+    return {
+      type:'supabase',
+      async connect(){
+        if (!url || !key) throw new Error('Supabase URL/Key kosong');
+        if (!window.supabase) throw new Error('Library supabase belum ter-load');
+        client = window.supabase.createClient(url, key, { auth:{persistSession:false} });
+        const { error } = await client.from('atletik_kids_state').select('id').eq('id',room).limit(1);
+        if (error) throw error;
+        setCloudStatus(true,'SUPABASE');
+        return true;
+      },
+      async load(){
+        if (!client) return null;
+        const [stateRes, scoresRes] = await Promise.all([
+          client.from('atletik_kids_state').select('events,participants,settings,updated_at').eq('id',room).maybeSingle(),
+          client.from('atletik_kids_scores').select('participant_id,event_id,m,s,ms,status').eq('room_id',room)
+        ]);
+        if (stateRes.error) throw stateRes.error;
+        const base = stateRes.data || {};
+        if (scoresRes.data && Array.isArray(base.participants)) {
+          applyScoreRows(base.participants, scoresRes.data);
+        }
+        return base;
+      },
+      async save(payload){
+        if (!client) return false;
+        const { error } = await client.from('atletik_kids_state')
+          .upsert({ id:room, ...payload, updated_at:new Date().toISOString() });
+        if (error) throw error;
+        return true;
+      },
+      async saveScore(participantId, eventId, scoreData, actor){
+        if (!client) return false;
+        const row = {
+          room_id: room, participant_id: participantId, event_id: eventId,
+          m: scoreData.m||'', s: scoreData.s||'', ms: scoreData.ms||'',
+          status: scoreData.status||'',
+          updated_at: new Date().toISOString(), updated_by: actor||'?'
+        };
+        const { error } = await client.from('atletik_kids_scores')
+          .upsert(row, { onConflict:'room_id,participant_id,event_id' });
+        if (error) throw error;
+        return true;
+      },
+      subscribe(cb){
+        channels.forEach(c=>{ try{ client.removeChannel(c); }catch(_){} });
+        channels = [];
+        if (!client) return ()=>{};
+        const ch1 = client.channel('atletik_state_'+room)
+          .on('postgres_changes',
+            { event:'UPDATE', schema:'public', table:'atletik_kids_state', filter:'id=eq.'+room },
+            (p)=> cb({ type:'state', data:p.new }))
+          .subscribe();
+        const ch2 = client.channel('atletik_scores_'+room)
+          .on('postgres_changes',
+            { event:'*', schema:'public', table:'atletik_kids_scores', filter:'room_id=eq.'+room },
+            (p)=> cb({ type:'score', data:p.new }))
+          .subscribe();
+        channels = [ch1, ch2];
+        return ()=>{ channels.forEach(c=>{ try{ client.removeChannel(c); }catch(_){} }); };
+      }
+    };
+  }
+
+  function GasAdapter(gasUrl){
+    let pollTimer=null;
+    const post = (body)=> fetch(gasUrl, {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body)
+    }).then(r=>JSON.parse ? r.text().then(t=>JSON.parse(t)) : r.json());
+    return {
+      type:'gas',
+      async connect(){
+        if (!gasUrl || !gasUrl.startsWith('http')) throw new Error('GAS URL belum diisi');
+        const res = await fetch(gasUrl+'?action=ping&t='+Date.now());
+        if (!res.ok) throw new Error('GAS not reachable');
+        setCloudStatus(true,'SPREADSHEET');
+        return true;
+      },
+      async load(){
+        const room = state.config.supabaseRoom||'main';
+        const [stateRes, scoresRes] = await Promise.all([
+          fetch(gasUrl+'?action=goget&t='+Date.now()).then(r=>r.text()).then(t=>JSON.parse(t)),
+          fetch(gasUrl+'?action=goget_scores&room_id='+room+'&t='+Date.now()).then(r=>r.text()).then(t=>JSON.parse(t))
+        ]);
+        const base = stateRes.data || {};
+        if (scoresRes.scores && Array.isArray(base.participants)) {
+          applyScoreRows(base.participants, scoresRes.scores);
+        }
+        return base;
+      },
+      async save(payload){
+        const res = await post({ action:'gopost', data:payload, actor:state.ui.currentUser||'admin', role:state.ui.role||'admin' });
+        if (!res.ok) throw new Error('save failed');
+        return true;
+      },
+      async saveScore(participantId, eventId, scoreData, actor){
+        const room = state.config.supabaseRoom||'main';
+        const res = await post({
+          action:'gopost_score', room_id:room,
+          participant_id:participantId, event_id:eventId,
+          m:scoreData.m||'', s:scoreData.s||'', ms:scoreData.ms||'',
+          status:scoreData.status||'',
+          actor:actor||state.ui.currentUser||'?', role:state.ui.role||'petugas'
+        });
+        if (!res.ok) throw new Error('score save failed');
+        return true;
+      },
+      subscribe(cb){
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async ()=>{
+          try{
+            const data = await this.load();
+            if (data) cb({ type:'state', data });
+          }catch(_){ setCloudStatus(false,'SPREADSHEET'); }
+        }, 10000);
+        return ()=>{ if(pollTimer) clearInterval(pollTimer); };
+      }
+    };
+  }
+
+  // Adapter switching
+  let unsubscribe = ()=>{};
+
+  // Merge rows dari tabel scores ke dalam array participants
+  function applyScoreRows(participants, rows){
+    rows.forEach(row=>{
+      const p = participants.find(p=>p.id===row.participant_id);
+      if (!p) return;
+      if (!p.scores) p.scores = {};
+      p.scores[row.event_id] = { m:row.m||'', s:row.s||'', ms:row.ms||'', status:row.status||'' };
+    });
+  }
+
+  async function applyAdapter(){
+    const cfg = state.config;
+    try{
+      if      (cfg.backend === 'supabase') state.runtime.adapter = SupabaseAdapter(cfg.supabaseUrl, cfg.supabaseKey, cfg.supabaseRoom||'main');
+      else if (cfg.backend === 'gas')      state.runtime.adapter = GasAdapter(cfg.gasUrl);
+      else                                  state.runtime.adapter = LocalAdapter();
+      await state.runtime.adapter.connect();
+
+      const loaded = await state.runtime.adapter.load();
+      if (loaded) hydrateState(loaded);
+
+      try{ unsubscribe(); }catch(_){}
+      unsubscribe = state.runtime.adapter.subscribe((remote)=>{
+        // remote bisa {type:'state', data} atau {type:'score', data} atau plain object (local/gas poll)
+        if (remote && remote.type === 'score'){
+          // Patch satu score saja — tidak perlu re-render seluruh state
+          const row = remote.data;
+          const p = state.participants.find(x=>x.id===row.participant_id);
+          if (p){
+            if (!p.scores) p.scores = {};
+            p.scores[row.event_id] = { m:row.m||'', s:row.s||'', ms:row.ms||'', status:row.status||'' };
+            if (state.ui.activeTab === 'hasil') renderInputHasilContainer();
+            if (state.ui.activeTab === 'hasil_pertandingan') renderAdminLeaderboards();
+            renderPublicLeaderboards();
+            showNotification('Skor diperbarui oleh '+( row.updated_by||'petugas'),'info');
+          }
+        } else {
+          const payload = remote.type === 'state' ? remote.data : remote;
+          hydrateState(payload);
+          renderApp();
+          showNotification('Data terbarui dari cloud','info');
+        }
+      });
+
+      renderApp();
+    }catch(err){
+      console.error(err);
+      setCloudStatus(false, cfg.backend.toUpperCase());
+      showNotification('Gagal sambung backend: '+(err.message||err),'error');
+      if (cfg.backend !== 'local'){
+        state.runtime.adapter = LocalAdapter();
+        await state.runtime.adapter.connect();
+        const local = await state.runtime.adapter.load();
+        if (local) hydrateState(local);
+        renderApp();
+      }
+    }
+  }
+
+  function hydrateState(payload){
+    if (!payload) return;
+    if (Array.isArray(payload.events))       state.events = payload.events;
+    if (Array.isArray(payload.participants)) state.participants = payload.participants;
+    if (payload.settings && typeof payload.settings === 'object') {
+      state.settings = { ...state.settings, ...payload.settings };
+    }
+    document.getElementById('public-updated').innerText =
+      payload.updated_at ? new Date(payload.updated_at).toLocaleString('id-ID') :
+      new Date().toLocaleString('id-ID');
+  }
+
+  function scheduleSync(){
+    state.runtime.pendingSyncCount++;
+    if (state.runtime.syncTimeout) clearTimeout(state.runtime.syncTimeout);
+    state.runtime.syncTimeout = setTimeout(async ()=>{
+      try{
+        await state.runtime.adapter.save({
+          events: state.events,
+          participants: state.participants,
+          settings: state.settings
+        });
+        state.runtime.pendingSyncCount = 0;
+        setCloudStatus(true, state.config.backend.toUpperCase());
+      }catch(err){
+        console.error(err);
+        setCloudStatus(false, state.config.backend.toUpperCase());
+        showNotification('Sync gagal — data tetap aman di perangkat','error');
+      }
+    }, 1500);
+  }
+
+  // ============================================================
+  // STATUS PILL
+  // ============================================================
+  function setCloudStatus(isOnline, label){
+    const ping = document.getElementById('cloud-ping');
+    const dot  = document.getElementById('cloud-dot');
+    const txt  = document.getElementById('cloud-text');
+    const be   = document.getElementById('cloud-backend');
+    if (!ping || !dot || !txt) return;
+
+    const isLocal = (label === 'LOCAL');
+
+    if (isLocal){
+      // Netral — bukan online, bukan offline
+      ping.className = 'absolute inline-flex h-full w-full rounded-full bg-slate-300 opacity-0';
+      dot.className  = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400';
+      txt.innerText  = 'LOKAL';
+    } else if (isOnline){
+      ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-60';
+      dot.className  = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600';
+      txt.innerText  = 'ONLINE';
+    } else {
+      ping.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-60';
+      dot.className  = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500';
+      txt.innerText  = 'OFFLINE';
+    }
+
+    if (label && !isLocal){ be.innerText = '· '+label; be.classList.remove('hidden'); }
+    else be.classList.add('hidden');
+  }
+
+  // ============================================================
+  // NOTIFICATION (toast)
+  // ============================================================
+  function showNotification(message, type='success'){
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const palette = { success:'bg-teal-700', error:'bg-rose-600', info:'bg-ink' };
+    const iconMap = { success:'check-circle', error:'alert-circle', info:'info' };
+    const t = document.createElement('div');
+    t.className = `${palette[type]||palette.success} text-white px-4 py-2.5 rounded-xl shadow-card flex items-center gap-2 translate-x-6 opacity-0 transition-all duration-300 pointer-events-auto font-bold text-xs tracking-wide`;
+    t.innerHTML = `<i data-lucide="${iconMap[type]||'check-circle'}" class="w-4 h-4"></i><span>${message}</span>`;
+    container.appendChild(t);
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+    requestAnimationFrame(()=>{ t.classList.remove('translate-x-6','opacity-0'); });
+    setTimeout(()=>{
+      t.classList.add('translate-x-6','opacity-0');
+      setTimeout(()=>t.remove(), 350);
+    }, 3000);
+  }
+
+  // ============================================================
+  // CUSTOM CONFIRM DIALOG (replacement for window.confirm)
+  // Returns a Promise<boolean>
+  // ============================================================
+  function customConfirm({title='Konfirmasi', body='', okText='YA, LANJUTKAN', cancelText='BATAL', danger=true}){
+    return new Promise((resolve)=>{
+      document.getElementById('confirm-modal-title').innerText = title;
+      document.getElementById('confirm-modal-desc').innerHTML  = body;
+      const ok = document.getElementById('confirm-modal-ok');
+      const cancel = document.getElementById('confirm-modal-cancel');
+      ok.innerText = okText; cancel.innerText = cancelText;
+      ok.className = danger ? 'btn-coral flex-1' : 'btn-primary flex-1';
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      function close(val){
+        modal.classList.add('hidden');
+        ok.onclick = null; cancel.onclick = null;
+        resolve(val);
+      }
+      ok.onclick = ()=>close(true);
+      cancel.onclick = ()=>close(false);
+    });
+  }
+
+  // ============================================================
+  // DATA HELPERS
+  // ============================================================
+  const calcMs = (m,s,ms)=> (parseInt(m)||0)*60000 + (parseInt(s)||0)*1000 + (parseInt(ms)||0);
+  const formatTitleCase = (text)=> text
+      ? text.toLowerCase().split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ')
+      : '';
+
+  function isDNF(score){
+    return !!(score && score.status === 'DNF');
+  }
+  function isEmptyScore(score){
+    if (!score) return true;
+    if (score.status === 'DNF') return false;
+    return (!score.m && !score.s && !score.ms);
+  }
+  function formatDisplayTime(score){
+    if (!score) return '-';
+    if (score.status === 'DNF') return 'DNF';
+    const m=String(score.m||0).padStart(2,'0'), s=String(score.s||0).padStart(2,'0'), ms=String(score.ms||0).padStart(3,'0');
+    if (m==='00'&&s==='00'&&ms==='000') return '-';
+    if (m==='00') return `${s}.${ms}`;
+    return `${m}:${s}.${ms}`;
+  }
+  function formatTotalTime(totalMs, isDnf){
+    if (isDnf) return 'DNF';
+    if (!totalMs) return '-';
+    const m=Math.floor(totalMs/60000), s=Math.floor((totalMs%60000)/1000), ms=totalMs%1000;
+    if (m===0) return `${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+  }
+
+  function getResults(eventFilter){
+    // eventFilter: 'all' (default) → klasemen total; eventId → ranking nomor itu saja
+    const singleEvent = (eventFilter && eventFilter !== 'all') ? eventFilter : null;
+
+    const processGroup = (gender)=>{
+      const group = state.participants.filter(p=>p.gender===gender).map(p=>{
+        let totalTime=0, hasAnyTime=false, hasDnf=false, hasAllTimes=true;
+        if (singleEvent){
+          const sc = p.scores?.[singleEvent];
+          if (isDNF(sc)) hasDnf = true;
+          const ms = calcMs(sc?.m, sc?.s, sc?.ms);
+          totalTime = ms;
+          hasAnyTime = ms > 0;
+          hasAllTimes = ms > 0;
+        } else {
+          state.events.forEach(e=>{
+            const sc = p.scores?.[e.id];
+            if (isDNF(sc)) hasDnf = true;
+            const ms = calcMs(sc?.m, sc?.s, sc?.ms);
+            if (ms > 0) hasAnyTime = true;
+            else hasAllTimes = false;
+            totalTime += ms;
+          });
+        }
+        return { ...p, totalTime, hasAnyTime, hasDnf, hasAllTimes };
+      });
+      const numParts = group.length;
+      group.sort((a,b)=>{
+        if (a.hasDnf && !b.hasDnf) return 1;
+        if (!a.hasDnf && b.hasDnf) return -1;
+        if (a.totalTime===0 && b.totalTime===0) return 0;
+        if (a.totalTime===0) return 1;
+        if (b.totalTime===0) return -1;
+        return a.totalTime - b.totalTime;
+      });
+      return group.map((p,index,arr)=>{
+        let finalRank = index+1;
+        if (index>0 && p.totalTime===arr[index-1].totalTime && !p.hasDnf && !arr[index-1].hasDnf) {
+          finalRank = arr[index-1].finalRank;
+        }
+        // Poin: harus punya waktu valid & tidak DNF. Untuk mode total, semua event wajib lengkap.
+        const eligible = p.hasAnyTime && !p.hasDnf && (singleEvent ? true : p.hasAllTimes);
+        const totalPoints = eligible ? (numParts - finalRank + 1) : 0;
+        return { ...p, finalRank, totalPoints, eligible };
+      });
+    };
+    return { putra: processGroup('L'), putri: processGroup('P') };
+  }
+
+
+  // ============================================================
+  // UNIFIED LEADERBOARD GENERATOR
+  // Konsolidasi 2 fungsi lama (public & admin) → 1 fungsi
+  // ============================================================
+  function generateLeaderboard({ data, title, mode='public', accentColor='teal', eventFilter='all', searchQuery='' }){
+    const cols = mode === 'public'
+      ? (state.settings.publicColumns || {rank:true,bib:true,participant:true,events:true,totalTime:true,totalPoints:true})
+      : { rank:true, bib:true, participant:true, events:true, totalTime:true, totalPoints:true };
+
+    const accentBg = accentColor === 'pink' ? 'bg-pink-500' : 'bg-teal-700';
+    const accentText = accentColor === 'pink' ? 'text-pink-700' : 'text-teal-700';
+    const singleEvent = (eventFilter && eventFilter !== 'all') ? state.events.find(e=>e.id===eventFilter) : null;
+
+    // Filter event columns: kalau filter satu nomor, hanya tampilkan nomor itu
+    const eventsToShow = singleEvent ? [singleEvent] : state.events;
+
+    // Apply search (public mode only)
+    const q = (searchQuery||'').trim().toLowerCase();
+    let filteredData = data;
+    if (mode === 'public' && q){
+      filteredData = data.filter(r=>{
+        const haystack = [r.name, r.school, r.bib, r.nisn].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    let html = `
+      <section class="a-slide">
+        <div class="flex items-center gap-3 mb-4 flex-wrap">
+          <div class="${accentBg} text-white px-3 py-1.5 rounded-lg text-xs font-bold tracking-widest inline-flex items-center gap-2">
+            <i data-lucide="trophy" class="w-3.5 h-3.5"></i> ${title}
+          </div>
+          ${singleEvent ? `<div class="px-3 py-1.5 rounded-lg text-xs font-bold tracking-widest bg-teal-50 text-teal-700 border border-teal-200 inline-flex items-center gap-1.5"><i data-lucide="filter" class="w-3 h-3"></i> ${singleEvent.name}</div>` : ''}
+          <div class="text-xs text-slate-400 font-bold tracking-wider">${filteredData.length}${q?` dari ${data.length}`:''} atlet</div>
+        </div>
+        <div class="${mode==='public' ? '' : 'card overflow-hidden'}">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm min-w-[760px] ${mode==='public'?'lb-table':''}">
+              <thead class="${mode==='public'?'':'bg-sand'} text-slate-500 text-[10px] tracking-widest uppercase">
+                <tr>`;
+    if (cols.rank)        html += `<th class="px-4 py-3 font-bold text-center w-16">Rank</th>`;
+    if (cols.bib)         html += `<th class="px-4 py-3 font-bold text-center w-20">BIB</th>`;
+    if (cols.participant) html += `<th class="px-4 py-3 font-bold">Peserta</th>`;
+    if (cols.events)      eventsToShow.forEach(e => html += `<th class="px-3 py-3 font-bold text-center">${e.name}</th>`);
+    if (cols.totalTime)   html += `<th class="px-4 py-3 font-bold text-center ${accentText}">${singleEvent?'Waktu':'Total'}</th>`;
+    if (cols.totalPoints) html += `<th class="px-4 py-3 font-bold text-center text-coral">Poin</th>`;
+    if (mode === 'admin') html += `<th class="px-3 py-3"></th>`;
+    html += `</tr></thead><tbody${mode==='admin'?' class="divide-y divide-slate-100"':''}>`;
+
+    if (filteredData.length === 0){
+      const colCount = (cols.rank?1:0)+(cols.bib?1:0)+(cols.participant?1:0)+(cols.events?eventsToShow.length:0)+(cols.totalTime?1:0)+(cols.totalPoints?1:0)+(mode==='admin'?1:0);
+      const emptyMsg = q
+        ? `Tidak ada hasil untuk "<span class="text-ink">${q}</span>" di kategori ini`
+        : 'BELUM ADA DATA';
+      html += `<tr><td colspan="${colCount}" class="p-10 text-center text-slate-400 font-bold tracking-widest text-xs">${emptyMsg}</td></tr>`;
+    } else {
+      filteredData.forEach((r) => {
+        const isTop1 = r.eligible && r.finalRank === 1 && r.totalPoints > 0;
+        const isTop2 = r.eligible && r.finalRank === 2 && r.totalPoints > 0;
+        const isTop3 = r.eligible && r.finalRank === 3 && r.totalPoints > 0;
+        const glassClass = mode === 'public'
+          ? (isTop1 ? 'glass-row glass-gold' : isTop2 ? 'glass-row glass-silver' : isTop3 ? 'glass-row glass-bronze' : '')
+          : '';
+        const medalBadge = isTop1 ? 'medal-1' : isTop2 ? 'medal-2' : isTop3 ? 'medal-3' : '';
+        const rowBaseClass = r.hasDnf && !glassClass ? 'bg-rose-50/40' : '';
+
+        html += `<tr class="${glassClass} ${rowBaseClass} ${mode==='admin'?'hover:bg-sand':''} transition-colors">`;
+
+        if (cols.rank){
+          html += `<td class="px-4 py-3 text-center">`;
+          if (r.hasDnf) html += `<span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-rose-100 text-rose-700 font-bold text-xs">DNF</span>`;
+          else if (r.eligible && r.totalPoints>0) html += `<span class="inline-flex items-center justify-center w-9 h-9 rounded-lg font-bold text-sm ${medalBadge || 'bg-sand text-ink border border-slate-200'}">${r.finalRank}</span>`;
+          else html += `<span class="text-slate-300 font-bold">—</span>`;
+          html += `</td>`;
+        }
+        if (cols.bib){
+          html += `<td class="px-4 py-3 text-center"><span class="num inline-block px-2 py-0.5 rounded-md bg-ink text-white text-xs font-bold">${r.bib||'—'}</span></td>`;
+        }
+        if (cols.participant){
+          html += `<td class="px-4 py-3">
+            <div class="font-bold text-ink leading-tight">${r.name}</div>
+            <div class="text-[11px] text-slate-500 font-semibold mt-0.5">${r.school||'—'}</div>
+          </td>`;
+        }
+        if (cols.events){
+          eventsToShow.forEach(e=>{
+            const sc = r.scores?.[e.id];
+            const isDnf = isDNF(sc);
+            const cellClass = isDnf ? 'text-rose-600 font-bold' : 'text-slate-600 num font-semibold';
+            html += `<td class="px-3 py-3 text-center text-xs ${cellClass}">${formatDisplayTime(sc)}</td>`;
+          });
+        }
+        if (cols.totalTime){
+          html += `<td class="px-4 py-3 text-center"><span class="num font-bold text-sm ${r.hasDnf?'text-rose-600':accentText}">${formatTotalTime(r.totalTime, r.hasDnf)}</span></td>`;
+        }
+        if (cols.totalPoints){
+          html += `<td class="px-4 py-3 text-center"><span class="num font-extrabold text-xl ${r.totalPoints>0?'text-coral':'text-slate-300'}">${r.totalPoints||'—'}</span></td>`;
+        }
+        if (mode === 'admin'){
+          html += `<td class="px-3 py-3 text-center"></td>`;
+        }
+        html += `</tr>`;
+      });
+    }
+
+    html += `</tbody></table></div></div></section>`;
+    return html;
+  }
+
+  // ============================================================
+  // RENDER: PESERTA TABLE
+  // ============================================================
+  function renderPesertaTable(){
+    const tbody = document.getElementById('peserta-tbody');
+    if (!tbody) return;
+    const total = state.participants.length;
+    const putra = state.participants.filter(p=>p.gender==='L').length;
+    const putri = total - putra;
+    document.getElementById('peserta-count').innerText = total;
+    document.getElementById('count-putra').innerText = putra;
+    document.getElementById('count-putri').innerText = putri;
+
+    if (total === 0){
+      tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-400 font-bold tracking-widest text-xs">BELUM ADA DATA · IMPORT EXCEL ATAU TAMBAH MANUAL</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = state.participants.map((p,i)=>`
+      <tr class="hover:bg-sand">
+        <td class="px-5 py-3 text-slate-400 font-bold text-xs">${i+1}</td>
+        <td class="px-5 py-3"><span class="num inline-block px-2 py-0.5 rounded-md bg-ink text-white text-xs font-bold">${p.bib||'—'}</span></td>
+        <td class="px-5 py-3 font-bold text-ink">${p.name}</td>
+        <td class="px-5 py-3 text-slate-500 text-xs font-semibold">${p.school||'—'}</td>
+        <td class="px-5 py-3">
+          <span class="text-[10px] font-bold tracking-widest px-2 py-0.5 rounded-md ${p.gender==='L'?'bg-blue-50 text-blue-700 border border-blue-200':'bg-pink-50 text-pink-700 border border-pink-200'}">
+            ${p.gender==='L'?'PUTRA':'PUTRI'}
+          </span>
+        </td>
+        <td class="px-5 py-3 text-center">
+          <button onclick="showEditModal('${p.id}')" class="text-slate-400 hover:text-teal-700 hover:bg-teal-50 p-1.5 rounded-lg transition-all"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+          <button onclick="removeParticipant('${p.id}')" class="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </td>
+      </tr>`).join('');
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  // ============================================================
+  // RENDER: CABANG LIST
+  // ============================================================
+  function renderCabangList(){
+    const container = document.getElementById('cabang-list');
+    if (!container) return;
+    if (state.events.length === 0){
+      container.innerHTML = `<div class="col-span-2 card p-10 text-center text-slate-400 font-bold text-xs tracking-widest">BELUM ADA NOMOR LOMBA</div>`;
+      return;
+    }
+    container.innerHTML = state.events.map((e,i)=>`
+      <div class="card p-4 flex justify-between items-center group hover:border-teal-200 transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 bg-teal-50 text-teal-700 rounded-lg flex items-center justify-center font-extrabold text-sm">${i+1}</div>
+          <div>
+            <h3 class="font-bold text-ink text-sm">${e.name}</h3>
+            <p class="text-[10px] text-slate-400 font-semibold">ID · ${e.id}</p>
+          </div>
+        </div>
+        <button onclick="removeEvent('${e.id}')" class="text-slate-300 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>`).join('');
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  // ============================================================
+  // RENDER: INPUT HASIL WAKTU
+  // Termasuk toggle DNF dan kolom menit opsional
+  // ============================================================
+  function renderInputHasilContainer(){
+    const container = document.getElementById('input-hasil-container');
+    if (!container) return;
+    if (state.participants.length === 0){
+      container.innerHTML = `<div class="card p-10 text-center text-slate-400 font-bold tracking-widest text-xs">BELUM ADA DATA PESERTA</div>`;
+      return;
+    }
+
+    // Sync checkbox
+    const cb = document.getElementById('opt-show-minute');
+    if (cb) cb.checked = !!state.settings.showMinuteColumn;
+    const showMin = !!state.settings.showMinuteColumn;
+
+    const generateTable = (gender, title, accent) => {
+      const filtered = state.participants.filter(p=>p.gender===gender);
+      if (filtered.length === 0) return '';
+      const bgHeader = accent === 'pink' ? 'bg-pink-500' : 'bg-teal-700';
+      let h = `
+        <section class="mb-8">
+          <div class="inline-flex items-center gap-2 ${bgHeader} text-white px-3 py-1.5 rounded-lg text-xs font-bold tracking-widest mb-3">
+            <i data-lucide="users" class="w-3.5 h-3.5"></i> ${title}
+          </div>
+          <div class="card overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left min-w-[800px]">
+                <thead class="bg-sand text-slate-500 text-[10px] tracking-widest uppercase">
+                  <tr>
+                    <th class="px-4 py-3 font-bold sticky left-0 bg-sand">Peserta</th>
+                    ${state.events.map(e=>`<th class="px-3 py-3 font-bold text-center">${e.name}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">`;
+
+      filtered.forEach(p=>{
+        h += `<tr class="hover:bg-sand"><td class="px-4 py-3 sticky left-0 bg-white">
+          <div class="flex items-center gap-2">
+            ${p.bib?`<span class="num px-2 py-0.5 rounded-md bg-ink text-white text-[10px] font-bold">${p.bib}</span>`:''}
+            <span class="font-bold text-ink text-sm">${p.name}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-semibold ml-1 mt-0.5">${p.school||''}</div>
+        </td>`;
+
+        state.events.forEach(e=>{
+          const sc  = p.scores?.[e.id] || {m:'',s:'',ms:''};
+          const dnf = isDNF(sc);
+          const minBlock = showMin ? `
+            <input type="number" id="m-${p.id}-${e.id}" min="0" placeholder="00" value="${sc.m||''}"
+              ${dnf?'disabled':''} onblur="scheduleSaveTime('${p.id}','${e.id}')"
+              class="time-input ${dnf?'dnf':''}"/>
+            <span class="text-slate-500 font-bold px-0.5">:</span>` : '';
+          h += `<td class="px-3 py-3 text-center">
+            <div class="inline-flex items-center justify-center gap-0.5 bg-ink p-1.5 rounded-lg">
+              ${minBlock}
+              <input type="number" id="s-${p.id}-${e.id}" min="0" max="59" placeholder="00" value="${sc.s||''}"
+                ${dnf?'disabled':''} onblur="scheduleSaveTime('${p.id}','${e.id}')"
+                class="time-input ${dnf?'dnf':''}"/>
+              <span class="text-slate-500 font-bold px-0.5">.</span>
+              <input type="number" id="ms-${p.id}-${e.id}" min="0" max="999" placeholder="000" value="${sc.ms||''}"
+                ${dnf?'disabled':''} onblur="scheduleSaveTime('${p.id}','${e.id}')"
+                class="time-input ${dnf?'dnf':''}" style="width:3.5rem"/>
+            </div>
+            <button onclick="toggleDNF('${p.id}','${e.id}')" class="dnf-toggle mt-1.5 ${dnf?'active':''}">${dnf?'DNF':'± DNF'}</button>
+          </td>`;
+        });
+        h += `</tr>`;
+      });
+
+      h += `</tbody></table></div></div></section>`;
+      return h;
+    };
+
+    container.innerHTML =
+      generateTable('L','KATEGORI PUTRA','teal') +
+      generateTable('P','KATEGORI PUTRI','pink');
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  // ============================================================
+  // RENDER: PUBLIC & ADMIN LEADERBOARDS
+  // ============================================================
+  function renderPublicFilters(){
+    const container = document.getElementById('public-event-filter');
+    if (!container) return;
+    const current = state.ui.publicEventFilter || 'all';
+    let html = `<button class="filter-pill ${current==='all'?'active':''}" onclick="setPublicEventFilter('all')">SEMUA NOMOR · KLASEMEN TOTAL</button>`;
+    state.events.forEach(e=>{
+      html += `<button class="filter-pill ${current===e.id?'active':''}" onclick="setPublicEventFilter('${e.id}')">${e.name}</button>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function renderPublicLeaderboards(){
+    const filter = state.ui.publicEventFilter || 'all';
+    const search = state.ui.publicSearch || '';
+    const results = getResults(filter);
+    const c = document.getElementById('public-leaderboards');
+    if (!c) return;
+    c.innerHTML =
+      generateLeaderboard({ data:results.putra, title:'KLASEMEN PUTRA', mode:'public', accentColor:'teal', eventFilter:filter, searchQuery:search }) +
+      generateLeaderboard({ data:results.putri, title:'KLASEMEN PUTRI', mode:'public', accentColor:'pink', eventFilter:filter, searchQuery:search });
+
+    // Sync search UI state
+    const clearBtn = document.getElementById('public-search-clear');
+    const hint = document.getElementById('public-search-hint');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !search);
+    if (hint) hint.classList.toggle('hidden', !search);
+
+    renderPublicFilters();
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+  function renderAdminLeaderboards(){
+    const results = getResults();
+    const c = document.getElementById('admin-leaderboards');
+    if (!c) return;
+    c.innerHTML =
+      generateLeaderboard({ data:results.putra, title:'HASIL PUTRA', mode:'admin', accentColor:'teal' }) +
+      generateLeaderboard({ data:results.putri, title:'HASIL PUTRI', mode:'admin', accentColor:'pink' });
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  // ============================================================
+  // RENDER: SETTINGS forms & previews
+  // ============================================================
+  function renderPengaturan(){
+    const s = state.settings;
+    const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val||''; };
+    set('set-ketua-nama', s.ketuaNama); set('set-ketua-nip', s.ketuaNip);
+    set('set-koor-nama',  s.koorNama);  set('set-koor-nip',  s.koorNip);
+    set('set-kecamatan',  s.kecamatan); set('set-tahun',     s.tahun);
+    set('set-sekretariat',s.sekretariat);
+    set('set-runtext',    s.runningText || '');
+    const speedEl = document.getElementById('set-runtext-speed');
+    if (speedEl) speedEl.value = s.runningTextSpeed || '28';
+    updatePengaturanPreview();
+
+    // Backend config form
+    document.getElementById('cfg-sb-url').value  = state.config.supabaseUrl  || '';
+    document.getElementById('cfg-sb-key').value  = state.config.supabaseKey  || '';
+    document.getElementById('cfg-sb-room').value = state.config.supabaseRoom || 'main';
+    document.getElementById('cfg-gas-url').value = state.config.gasUrl       || '';
+    document.querySelectorAll('.backend-pill').forEach(b=>{
+      const isActive = b.dataset.backend === state.config.backend;
+      b.classList.toggle('bg-teal-700', isActive);
+      b.classList.toggle('text-white', isActive);
+      b.classList.toggle('border-teal-700', isActive);
+      b.classList.toggle('text-slate-600', !isActive);
+    });
+    document.getElementById('cfg-supabase').classList.toggle('hidden', state.config.backend !== 'supabase');
+    document.getElementById('cfg-gas').classList.toggle('hidden', state.config.backend !== 'gas');
+
+    // Akun petugas
+    renderAkunList();
+
+    // Subtab visibility
+    document.querySelectorAll('.pengaturan-content').forEach(c=>c.classList.add('hidden'));
+    const a = document.getElementById('subtab-'+state.ui.activeSubTab);
+    if (a) a.classList.remove('hidden');
+  }
+
+  function updatePengaturanPreview(){
+    const s = state.settings;
+    const t = document.getElementById('prev-kop-title');
+    if (t) t.innerHTML = `
+      <p class="text-xs font-bold text-ink leading-relaxed">LAPORAN HASIL PERLOMBAAN</p>
+      <p class="text-xs font-bold text-ink leading-relaxed">KID'S ATHLETIC O2SN ${s.kecamatan||'-'}</p>
+      <p class="text-xs font-bold text-ink leading-relaxed">TAHUN ${s.tahun||'-'}</p>`;
+    const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.innerText = val; };
+    set('prev-ketua-nama', s.ketuaNama || '(Belum diisi)');
+    set('prev-ketua-nip',  'NIP. '+(s.ketuaNip||'-'));
+    set('prev-koor-nama',  s.koorNama || '(Belum diisi)');
+    set('prev-koor-nip',   'NIP. '+(s.koorNip||'-'));
+  }
+
+  // ============================================================
+  // RENDER: SIDEBAR + TABS
+  // ============================================================
+  function renderAdminSidebar(){
+    const ui = state.ui;
+    const isAdmin = ui.role === 'admin';
+    const renderBtn = (id, icon, label)=>{
+      const active = ui.activeTab === id;
+      return `<button onclick="setActiveTab('${id}')" class="nav-btn ${active?'active':''}">
+        <span class="flex items-center gap-2.5"><i data-lucide="${icon}" class="w-4 h-4"></i><span>${label}</span></span>
+        ${active ? `<i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>` : ''}
+      </button>`;
+    };
+
+    let html = `<div class="text-[10px] font-bold text-slate-400 px-2 mb-2 tracking-widest">MENU UTAMA</div>`;
+
+    if (isAdmin) html += renderBtn('peserta','users','Input Peserta');
+    if (isAdmin) html += renderBtn('cabang','activity','Cabang Lomba');
+    html += renderBtn('hasil','timer','Input Hasil Waktu');
+
+    if (isAdmin){
+      // Submenu Hasil Pertandingan
+      const hasilActive = ui.activeTab === 'hasil_pertandingan';
+      html += `<div>
+        <button onclick="toggleHasilMenu()" class="nav-btn ${hasilActive?'active':''}">
+          <span class="flex items-center gap-2.5"><i data-lucide="list-ordered" class="w-4 h-4"></i><span>Hasil Pertandingan</span></span>
+          <i data-lucide="${ui.isHasilExpanded?'chevron-down':'chevron-right'}" class="w-3.5 h-3.5"></i>
+        </button>
+        <div class="${ui.isHasilExpanded?'block':'hidden'} pl-6 mt-1 space-y-1">
+          <button onclick="setHasilTab('rekap')" class="subnav-btn ${hasilActive&&ui.activeHasilSubTab==='rekap'?'active':''}">Rekapitulasi</button>
+          <button onclick="setHasilTab('post')"  class="subnav-btn ${hasilActive&&ui.activeHasilSubTab==='post'?'active':''}">Unggah / Post Publik</button>
+        </div>
+      </div>`;
+      html += renderBtn('laporan','file-text','Laporan Hasil');
+    }
+
+    if (isAdmin){
+      // Submenu Pengaturan (admin saja)
+      const setActive = ui.activeTab === 'pengaturan';
+      html += `<div>
+        <button onclick="toggleSettingsMenu()" class="nav-btn ${setActive?'active':''}">
+          <span class="flex items-center gap-2.5"><i data-lucide="settings" class="w-4 h-4"></i><span>Pengaturan</span></span>
+          <i data-lucide="${ui.isSettingsExpanded?'chevron-down':'chevron-right'}" class="w-3.5 h-3.5"></i>
+        </button>
+        <div class="${ui.isSettingsExpanded?'block':'hidden'} pl-6 mt-1 space-y-1">
+          <button onclick="setSettingsTab('kop')"      class="subnav-btn ${setActive&&ui.activeSubTab==='kop'?'active':''}">Kop Surat</button>
+          <button onclick="setSettingsTab('ttd')"      class="subnav-btn ${setActive&&ui.activeSubTab==='ttd'?'active':''}">Penandatangan</button>
+          <button onclick="setSettingsTab('runtext')"  class="subnav-btn ${setActive&&ui.activeSubTab==='runtext'?'active':''}">Running Text</button>
+          <button onclick="setSettingsTab('akun')"     class="subnav-btn ${setActive&&ui.activeSubTab==='akun'?'active':''}">Akun Petugas</button>
+          <button onclick="setSettingsTab('backend')"  class="subnav-btn ${setActive&&ui.activeSubTab==='backend'?'active':''}">Database Supabase</button>
+          <button onclick="setSettingsTab('keamanan')" class="subnav-btn ${setActive&&ui.activeSubTab==='keamanan'?'active':''}">Reset Password</button>
+        </div>
+      </div>`;
+    }
+
+    // Role badge
+    html += `<div class="mt-4 px-2 py-2 rounded-xl ${isAdmin?'bg-teal-50 border border-teal-200':'bg-amber-50 border border-amber-200'}">
+      <div class="text-[9px] font-bold tracking-widest ${isAdmin?'text-teal-700':'text-amber-700'}">${isAdmin?'👑 ADMIN':'✏️ PETUGAS INPUT'}</div>
+      <div class="text-[10px] font-bold text-ink mt-0.5">@${ui.currentUser||'-'}</div>
+    </div>`;
+
+    document.getElementById('sidebar-nav').innerHTML = html;
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  function renderAdminTabs(){
+    const tabs = ['peserta','cabang','hasil','hasil_pertandingan','laporan','pengaturan'];
+    tabs.forEach(t=>{
+      const el = document.getElementById('tab-'+t);
+      if (el) el.classList.toggle('hidden', state.ui.activeTab !== t);
+    });
+    if (state.ui.activeTab === 'peserta') renderPesertaTable();
+    if (state.ui.activeTab === 'cabang')  renderCabangList();
+    if (state.ui.activeTab === 'hasil')   renderInputHasilContainer();
+    if (state.ui.activeTab === 'pengaturan') renderPengaturan();
+    if (state.ui.activeTab === 'hasil_pertandingan'){
+      document.querySelectorAll('.hasil-content').forEach(c=>c.classList.add('hidden'));
+      const a = document.getElementById('subtab-'+state.ui.activeHasilSubTab);
+      if (a) a.classList.remove('hidden');
+      if (state.ui.activeHasilSubTab === 'rekap') renderAdminLeaderboards();
+      else if (state.ui.activeHasilSubTab === 'post'){
+        const cols = state.settings.publicColumns || {rank:true,bib:true,participant:true,events:true,totalTime:true,totalPoints:true};
+        ['rank','bib','participant','events','totalTime','totalPoints'].forEach(k=>{
+          const cb = document.getElementById('col-'+k);
+          if (cb) cb.checked = !!cols[k];
+        });
+      }
+    }
+  }
+
+  function renderApp(){
+    document.getElementById('header-logo').src = URL_LOGO_O2SN;
+    document.getElementById('sidebar-logo').src = URL_LOGO_O2SN;
+
+    if (state.ui.isLoggedIn){
+      document.getElementById('public-view').classList.add('hidden');
+      document.getElementById('admin-view').classList.remove('hidden');
+      document.getElementById('login-btn').classList.add('hidden');
+      renderAdminSidebar(); renderAdminTabs();
+    } else {
+      document.getElementById('public-view').classList.remove('hidden');
+      document.getElementById('admin-view').classList.add('hidden');
+      document.getElementById('login-btn').classList.remove('hidden');
+      const kec = document.getElementById('header-kecamatan');
+      const thn = document.getElementById('header-tahun');
+      if (kec) kec.innerText = state.settings.kecamatan || '—';
+      if (thn) thn.innerText = `TAHUN ${state.settings.tahun || '—'}`;
+      applyRunningText();
+      renderPublicLeaderboards();
+    }
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+
+  // ============================================================
+  // ACTION HANDLERS (exposed to window for inline onclick)
+  // ============================================================
+  window.setActiveTab = (id)=>{
+    state.ui.activeTab = id;
+    if (id !== 'pengaturan')         state.ui.isSettingsExpanded = false;
+    if (id !== 'hasil_pertandingan') state.ui.isHasilExpanded   = false;
+    renderApp();
+  };
+  window.toggleSettingsMenu = ()=>{
+    state.ui.isSettingsExpanded = !state.ui.isSettingsExpanded;
+    state.ui.activeTab = 'pengaturan';
+    if (!state.ui.activeSubTab) state.ui.activeSubTab = 'kop';
+    renderApp();
+  };
+  window.setSettingsTab = (id)=>{
+    state.ui.activeTab = 'pengaturan';
+    state.ui.activeSubTab = id;
+    state.ui.isSettingsExpanded = true;
+    renderApp();
+  };
+  window.toggleHasilMenu = ()=>{
+    state.ui.isHasilExpanded = !state.ui.isHasilExpanded;
+    state.ui.activeTab = 'hasil_pertandingan';
+    if (!state.ui.activeHasilSubTab) state.ui.activeHasilSubTab = 'rekap';
+    renderApp();
+  };
+  window.setHasilTab = (id)=>{
+    state.ui.activeTab = 'hasil_pertandingan';
+    state.ui.activeHasilSubTab = id;
+    state.ui.isHasilExpanded = true;
+    renderApp();
+  };
+
+  // ---- PUBLIC FILTER & SEARCH ----
+  window.setPublicEventFilter = (id)=>{
+    state.ui.publicEventFilter = id;
+    renderPublicLeaderboards();
+  };
+  // Debounced search to avoid re-render thrash on each keystroke
+  let _searchDebounce = null;
+  window.setPublicSearch = (val)=>{
+    state.ui.publicSearch = val;
+    if (_searchDebounce) clearTimeout(_searchDebounce);
+    _searchDebounce = setTimeout(()=>{ renderPublicLeaderboards(); }, 180);
+  };
+  window.clearPublicSearch = ()=>{
+    state.ui.publicSearch = '';
+    const el = document.getElementById('public-search');
+    if (el) el.value = '';
+    renderPublicLeaderboards();
+  };
+
+  // ---- LOGIN (with SHA-256) ----
+  window.showLoginModal = ()=>{ document.getElementById('login-modal').classList.remove('hidden'); };
+  window.hideLoginModal = ()=>{
+    document.getElementById('login-modal').classList.add('hidden');
+    document.getElementById('login-error').classList.add('hidden');
+  };
+  window.togglePasswordVisibility = ()=>{
+    const input = document.getElementById('login-password');
+    const icon  = document.getElementById('pass-eye-icon');
+    if (input.type === 'password'){ input.type = 'text'; icon.setAttribute('data-lucide','eye-off'); }
+    else { input.type = 'password'; icon.setAttribute('data-lucide','eye'); }
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  };
+  window.handleLogin = async (e)=>{
+    e.preventDefault();
+    const u    = document.getElementById('login-username').value.trim().toLowerCase();
+    const p    = document.getElementById('login-password').value;
+    const hash = await sha256(p);
+    const err  = document.getElementById('login-error');
+
+    // Cek admin
+    const adminHash = state.settings.adminPasswordHash || DEFAULT_ADMIN_HASH;
+    if (u === 'admin' && hash === adminHash){
+      state.ui.isLoggedIn = true;
+      state.ui.role = 'admin';
+      state.ui.currentUser = 'admin';
+      window.hideLoginModal();
+      state.ui.activeTab = 'peserta';
+      renderApp();
+      showNotification('Login berhasil sebagai Admin','success');
+      return;
+    }
+
+    // Cek akun petugas
+    const accounts = state.settings.accounts || [];
+    const found = accounts.find(a=> a.username === u && a.passwordHash === hash);
+    if (found){
+      state.ui.isLoggedIn = true;
+      state.ui.role = 'petugas';
+      state.ui.currentUser = found.username;
+      window.hideLoginModal();
+      state.ui.activeTab = 'hasil';  // petugas langsung ke input hasil
+      renderApp();
+      showNotification('Login sebagai Petugas · '+found.nama,'success');
+      return;
+    }
+
+    err.classList.remove('hidden');
+    err.innerText = 'Username atau password salah';
+  };
+
+  window.doLogout = ()=>{
+    state.ui.isLoggedIn = false;
+    state.ui.role = '';
+    state.ui.currentUser = '';
+    renderApp();
+    showNotification('Berhasil keluar','info');
+  };
+
+  // ---- ACCOUNT MANAGEMENT ----
+  window.addPetugasAccount = async (e)=>{
+    e.preventDefault();
+    const accounts = state.settings.accounts || [];
+    if (accounts.length >= 10){
+      showNotification('Maksimal 10 akun petugas','error'); return;
+    }
+    const username = document.getElementById('new-akun-username').value.trim().toLowerCase();
+    const password = document.getElementById('new-akun-password').value;
+    const nama     = document.getElementById('new-akun-nama').value.trim();
+    if (!username || !password) return;
+    if (username === 'admin'){ showNotification('Username "admin" dicadangkan','error'); return; }
+    if (accounts.find(a=>a.username===username)){
+      showNotification('Username sudah dipakai','error'); return;
+    }
+    const passwordHash = await sha256(password);
+    state.settings.accounts = [...accounts, { username, passwordHash, nama, role:'petugas', createdAt:Date.now() }];
+    document.getElementById('new-akun-username').value = '';
+    document.getElementById('new-akun-password').value = '';
+    document.getElementById('new-akun-nama').value = '';
+    renderAkunList();
+    scheduleSync();
+    showNotification('Akun petugas "'+username+'" dibuat','success');
+  };
+
+  window.removePetugasAccount = async (username)=>{
+    const ok = await customConfirm({
+      title:'Hapus akun?',
+      body:`Hapus akun petugas <b class="text-ink">${username}</b>? Akun ini tidak bisa login lagi.`,
+      okText:'YA, HAPUS', danger:true
+    });
+    if (!ok) return;
+    state.settings.accounts = (state.settings.accounts||[]).filter(a=>a.username!==username);
+    renderAkunList();
+    scheduleSync();
+    showNotification('Akun dihapus','info');
+  };
+
+  function renderAkunList(){
+    const list = document.getElementById('akun-list');
+    const count = document.getElementById('akun-count');
+    const accounts = state.settings.accounts || [];
+    if (count) count.innerText = accounts.length;
+    if (!list) return;
+    if (accounts.length === 0){
+      list.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs font-bold tracking-widest">BELUM ADA AKUN PETUGAS</div>`;
+      return;
+    }
+    list.innerHTML = accounts.map((a,i)=>`
+      <div class="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-teal-200 hover:bg-teal-50/30 transition-all">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-extrabold text-sm">${i+1}</div>
+          <div>
+            <div class="font-bold text-ink text-sm">${a.nama||'(Tanpa nama)'}</div>
+            <div class="text-[10px] text-slate-400 font-bold tracking-widest">@${a.username} · PETUGAS INPUT</div>
+          </div>
+        </div>
+        <button onclick="removePetugasAccount('${a.username}')" class="text-slate-300 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-lg transition-all">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>`).join('');
+    if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
+  }
+
+  // ---- RUNNING TEXT ----
+  window.saveRunText = ()=>{
+    const text  = document.getElementById('set-runtext').value.trim();
+    const speed = document.getElementById('set-runtext-speed').value;
+    state.settings.runningText = text;
+    state.settings.runningTextSpeed = speed;
+    applyRunningText();
+    scheduleSync();
+    showNotification('Running text disimpan','success');
+  };
+
+  function applyRunningText(){
+    const text  = state.settings.runningText || '';
+    const speed = state.settings.runningTextSpeed || '28';
+    const wrap  = document.getElementById('marquee-container');
+    const track = document.getElementById('marquee-text');
+    if (!wrap || !track) return;
+    if (!text){ wrap.classList.add('hidden'); return; }
+    track.innerText = text + '\u00A0\u00A0\u00A0\u00A0·\u00A0\u00A0\u00A0\u00A0' + text;
+    track.style.animationDuration = speed + 's';
+    wrap.classList.remove('hidden');
+    // Update preview di admin
+    const pTrack = document.getElementById('runtext-preview-text');
+    if (pTrack){ pTrack.innerText = track.innerText; pTrack.style.animationDuration = speed+'s'; }
+  }
+
+  // Live preview update untuk running text
+  document.addEventListener('input', (e)=>{
+    if (e.target && (e.target.id === 'set-runtext' || e.target.id === 'set-runtext-speed')){
+      const text  = document.getElementById('set-runtext')?.value.trim() || '';
+      const speed = document.getElementById('set-runtext-speed')?.value || '28';
+      const pTrack = document.getElementById('runtext-preview-text');
+      if (pTrack){ pTrack.innerText = text || '— preview teks berjalan —'; pTrack.style.animationDuration = speed+'s'; }
+    }
+  });
+
+  window.changeAdminPassword = async ()=>{
+    const oldP = document.getElementById('set-pass-old').value;
+    const newP = document.getElementById('set-pass-new').value;
+    if (!oldP || !newP) return;
+    const oldHash = await sha256(oldP);
+    if (oldHash !== (state.settings.adminPasswordHash || DEFAULT_ADMIN_HASH)){
+      showNotification('Password lama salah','error'); return;
+    }
+    if (newP.length < 6){ showNotification('Password minimal 6 karakter','error'); return; }
+    state.settings.adminPasswordHash = await sha256(newP);
+    document.getElementById('set-pass-old').value = '';
+    document.getElementById('set-pass-new').value = '';
+    showNotification('Password diperbarui','success');
+    scheduleSync();
+  };
+
+  // ---- PARTICIPANT CRUD ----
+  window.addParticipant = (e)=>{
+    e.preventDefault();
+    const name = document.getElementById('newPartName').value.trim();
+    if (!name) return;
+    const initialScores = {};
+    state.events.forEach(ev => { initialScores[ev.id] = {m:'',s:'',ms:'',status:''}; });
+    state.participants.push({
+      id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+      bib: document.getElementById('newPartBib').value.trim().toUpperCase(),
+      nisn: (document.getElementById('newPartNisn').value || '').trim(),
+      name: formatTitleCase(name),
+      school: formatTitleCase(document.getElementById('newPartSchool').value.trim()),
+      gender: document.getElementById('newPartGender').value,
+      scores: initialScores,
+      createdAt: Date.now()
+    });
+    document.getElementById('newPartBib').value = '';
+    document.getElementById('newPartNisn').value = '';
+    document.getElementById('newPartName').value = '';
+    document.getElementById('newPartSchool').value = '';
+    renderApp();
+    scheduleSync();
+  };
+  window.removeParticipant = async (id)=>{
+    const p = state.participants.find(x=>x.id===id);
+    if (!p) return;
+    const ok = await customConfirm({
+      title:'Hapus peserta?',
+      body:`Anda akan menghapus <b class="text-ink">${p.name}</b> beserta seluruh data waktunya. Tindakan ini tidak bisa dibatalkan.`,
+      okText:'YA, HAPUS', danger:true
+    });
+    if (!ok) return;
+    state.participants = state.participants.filter(p=>p.id!==id);
+    renderApp(); scheduleSync();
+    showNotification('Peserta dihapus','info');
+  };
+  window.showEditModal = (id)=>{
+    const p = state.participants.find(x=>x.id===id); if (!p) return;
+    document.getElementById('edit-id').value     = p.id;
+    document.getElementById('edit-bib').value    = p.bib||'';
+    document.getElementById('edit-nisn').value   = p.nisn||'';
+    document.getElementById('edit-name').value   = p.name||'';
+    document.getElementById('edit-school').value = p.school||'';
+    document.getElementById('edit-gender').value = p.gender||'L';
+    document.getElementById('edit-modal').classList.remove('hidden');
+  };
+  window.hideEditModal = ()=>{ document.getElementById('edit-modal').classList.add('hidden'); };
+  window.handleUpdateParticipant = (e)=>{
+    e.preventDefault();
+    const id = document.getElementById('edit-id').value;
+    const i  = state.participants.findIndex(p=>p.id===id);
+    if (i !== -1){
+      state.participants[i].bib    = document.getElementById('edit-bib').value.trim().toUpperCase();
+      state.participants[i].nisn   = document.getElementById('edit-nisn').value.trim();
+      state.participants[i].name   = formatTitleCase(document.getElementById('edit-name').value.trim());
+      state.participants[i].school = formatTitleCase(document.getElementById('edit-school').value.trim());
+      state.participants[i].gender = document.getElementById('edit-gender').value;
+    }
+    window.hideEditModal();
+    renderApp(); scheduleSync();
+    showNotification('Data peserta diperbarui','success');
+  };
+
+  // ---- EVENT CRUD ----
+  window.addEvent = (e)=>{
+    e.preventDefault();
+    const n = document.getElementById('newEventName').value.trim();
+    if (!n) return;
+    state.events.push({ id:'e'+Date.now(), name:n.toUpperCase(), createdAt:Date.now() });
+    document.getElementById('newEventName').value = '';
+    // Pastikan semua peserta dapat slot score untuk event baru
+    state.participants.forEach(p=>{
+      if (!p.scores) p.scores = {};
+      if (!p.scores[state.events[state.events.length-1].id]) p.scores[state.events[state.events.length-1].id] = {m:'',s:'',ms:'',status:''};
+    });
+    renderApp(); scheduleSync();
+  };
+  window.removeEvent = async (id)=>{
+    const ev = state.events.find(e=>e.id===id);
+    if (!ev) return;
+    const ok = await customConfirm({
+      title:'Hapus cabang lomba?',
+      body:`Nomor <b class="text-ink">${ev.name}</b> akan dihapus beserta SELURUH catatan waktu peserta di nomor ini.`,
+      okText:'YA, HAPUS', danger:true
+    });
+    if (!ok) return;
+    state.events = state.events.filter(e=>e.id!==id);
+    state.participants.forEach(p=>{ if (p.scores) delete p.scores[id]; });
+    renderApp(); scheduleSync();
+  };
+
+  // ---- TIME INPUT (debounced, with confirm-on-overwrite) ----
+  const saveTimeouts = {};
+  window.scheduleSaveTime = (pId, eId)=>{
+    const key = `${pId}-${eId}`;
+    if (saveTimeouts[key]) clearTimeout(saveTimeouts[key]);
+    saveTimeouts[key] = setTimeout(()=>{
+      const showMin = !!state.settings.showMinuteColumn;
+      const mEl = document.getElementById(`m-${pId}-${eId}`);
+      const sEl = document.getElementById(`s-${pId}-${eId}`);
+      const msEl= document.getElementById(`ms-${pId}-${eId}`);
+      // Jika fokus masih di group yang sama → tunda
+      const active = document.activeElement;
+      if (active === mEl || active === sEl || active === msEl) return;
+      const newM  = showMin && mEl ? mEl.value : '';
+      const newS  = sEl  ? sEl.value  : '';
+      const newMs = msEl ? msEl.value : '';
+      handleTimeChange(pId, eId, newM, newS, newMs);
+    }, 200);
+  };
+
+  async function handleTimeChange(pId, eId, newM, newS, newMs){
+    const i = state.participants.findIndex(p=>p.id===pId);
+    if (i === -1) return;
+    const p = state.participants[i];
+    const eventName = state.events.find(e=>e.id===eId)?.name || 'Lomba';
+    const old = p.scores?.[eId] || { m:'', s:'', ms:'', status:'' };
+    if (old.status === 'DNF') return;  // jangan timpa DNF lewat input field
+    const changed = (newM!==(old.m||'')) || (newS!==(old.s||'')) || (newMs!==(old.ms||''));
+    const hadOld = !!(old.m || old.s || old.ms);
+
+    if (!changed) return;
+    if (hadOld){
+      const ok = await customConfirm({
+        title:'Konfirmasi perubahan',
+        body:`Mengubah catatan <b class="text-ink">${p.name}</b> pada <b class="text-teal-700">${eventName}</b>:
+              <div class="mt-3 grid gap-2 text-xs">
+                <div>Lama <span class="num font-mono bg-rose-50 text-rose-700 px-2 py-0.5 rounded ml-2">${formatDisplayTime(old)}</span></div>
+                <div>Baru <span class="num font-mono bg-teal-50 text-teal-700 px-2 py-0.5 rounded ml-2">${formatDisplayTime({m:newM,s:newS,ms:newMs})}</span></div>
+              </div>`,
+        okText:'YA, SIMPAN', cancelText:'BATAL', danger:false
+      });
+      if (!ok){
+        const showMin = !!state.settings.showMinuteColumn;
+        if (showMin) document.getElementById(`m-${pId}-${eId}`).value = old.m||'';
+        document.getElementById(`s-${pId}-${eId}`).value  = old.s||'';
+        document.getElementById(`ms-${pId}-${eId}`).value = old.ms||'';
+        showNotification('Perubahan dibatalkan','info');
+        return;
+      }
+    }
+    executeSaveTime(pId, eId, newM, newS, newMs);
+    showNotification('Tersimpan','success');
+  }
+  function executeSaveTime(pId, eId, m, s, ms){
+    const i = state.participants.findIndex(p=>p.id===pId);
+    if (i === -1) return;
+    if (!state.participants[i].scores) state.participants[i].scores = {};
+    const scoreData = { m, s, ms, status:'' };
+    state.participants[i].scores[eId] = scoreData;
+
+    // Granular patch — hanya kirim 1 score row, bukan seluruh blob
+    const actor = state.ui.currentUser || 'admin';
+    if (state.runtime.adapter && state.runtime.adapter.saveScore){
+      state.runtime.adapter.saveScore(pId, eId, scoreData, actor)
+        .then(()=>{ state.runtime.pendingSyncCount = Math.max(0, state.runtime.pendingSyncCount-1); })
+        .catch(err=>{ showNotification('Sync score gagal: '+(err.message||err),'error'); });
+      state.runtime.pendingSyncCount++;
+    } else {
+      scheduleSync(); // fallback local
+    }
+    if (state.ui.activeTab === 'hasil_pertandingan' && state.ui.activeHasilSubTab === 'rekap') renderAdminLeaderboards();
+  }
+
+  window.toggleDNF = async (pId, eId)=>{
+    const i = state.participants.findIndex(p=>p.id===pId);
+    if (i === -1) return;
+    const p = state.participants[i];
+    const sc = p.scores?.[eId] || {m:'',s:'',ms:'',status:''};
+    const actor = state.ui.currentUser || 'admin';
+    if (sc.status === 'DNF'){
+      const newScore = { m:'', s:'', ms:'', status:'' };
+      p.scores[eId] = newScore;
+      if (state.runtime.adapter?.saveScore) state.runtime.adapter.saveScore(pId, eId, newScore, actor).catch(()=>{});
+      else scheduleSync();
+      renderInputHasilContainer();
+      showNotification('DNF dibatalkan','info');
+    } else {
+      const eventName = state.events.find(e=>e.id===eId)?.name || 'Lomba';
+      const ok = await customConfirm({
+        title:'Tandai DNF?',
+        body:`Tandai <b class="text-ink">${p.name}</b> sebagai <b class="text-rose-600">DNF</b> di nomor <b class="text-teal-700">${eventName}</b>?
+              <div class="mt-2 text-xs text-slate-500">Atlet DNF tidak mendapat poin dan tidak masuk ranking.</div>`,
+        okText:'YA, TANDAI DNF', danger:true
+      });
+      if (!ok) return;
+      if (!p.scores) p.scores = {};
+      const newScore = { m:'', s:'', ms:'', status:'DNF' };
+      p.scores[eId] = newScore;
+      if (state.runtime.adapter?.saveScore) state.runtime.adapter.saveScore(pId, eId, newScore, actor).catch(()=>{});
+      else scheduleSync();
+      renderInputHasilContainer();
+      showNotification('Status DNF dicatat','info');
+    }
+  };
+
+  // Toggle kolom menit
+  document.addEventListener('change', (e)=>{
+    if (e.target && e.target.id === 'opt-show-minute'){
+      state.settings.showMinuteColumn = e.target.checked;
+      renderInputHasilContainer();
+      scheduleSync();
+    }
+  });
+
+  // ---- SETTINGS ----
+  window.saveAppSettings = ()=>{
+    state.settings = { ...state.settings,
+      ketuaNama:    document.getElementById('set-ketua-nama').value.trim(),
+      ketuaNip:     document.getElementById('set-ketua-nip').value.trim(),
+      koorNama:     document.getElementById('set-koor-nama').value.trim(),
+      koorNip:      document.getElementById('set-koor-nip').value.trim(),
+      kecamatan:   (document.getElementById('set-kecamatan').value || '').trim().toUpperCase(),
+      tahun:        document.getElementById('set-tahun').value.trim(),
+      sekretariat:  document.getElementById('set-sekretariat').value.trim()
+    };
+    updatePengaturanPreview();
+    showNotification('Pengaturan disimpan','success');
+    scheduleSync();
+  };
+  window.savePublicDisplaySettings = ()=>{
+    state.settings.publicColumns = {
+      rank:         document.getElementById('col-rank').checked,
+      bib:          document.getElementById('col-bib').checked,
+      participant:  document.getElementById('col-participant').checked,
+      events:       document.getElementById('col-events').checked,
+      totalTime:    document.getElementById('col-totalTime').checked,
+      totalPoints:  document.getElementById('col-totalPoints').checked
+    };
+    showNotification('Pengaturan publik disimpan','success');
+    scheduleSync();
+  };
+
+  // ---- BACKEND CONFIG ----
+  window.selectBackend = (kind)=>{
+    state.config.backend = kind;
+    document.querySelectorAll('.backend-pill').forEach(b=>{
+      const isActive = b.dataset.backend === kind;
+      b.classList.toggle('bg-teal-700', isActive);
+      b.classList.toggle('text-white', isActive);
+      b.classList.toggle('border-teal-700', isActive);
+      b.classList.toggle('text-slate-600', !isActive);
+    });
+    document.getElementById('cfg-supabase').classList.toggle('hidden', kind !== 'supabase');
+    document.getElementById('cfg-gas').classList.toggle('hidden', kind !== 'gas');
+  };
+  window.saveBackendConfig = async ()=>{
+    state.config.supabaseUrl  = document.getElementById('cfg-sb-url').value.trim();
+    state.config.supabaseKey  = document.getElementById('cfg-sb-key').value.trim();
+    state.config.supabaseRoom = document.getElementById('cfg-sb-room').value.trim() || 'main';
+    state.config.gasUrl       = document.getElementById('cfg-gas-url').value.trim();
+    localStorage.setItem(LS_CFG, JSON.stringify(state.config));
+    await applyAdapter();
+    showNotification('Konfigurasi backend tersimpan','success');
+  };
+  window.testBackendConnection = async ()=>{
+    const cfg = state.config;
+    try{
+      if (cfg.backend === 'supabase'){
+        if (!window.supabase) throw new Error('Library supabase belum termuat');
+        const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+        const { error } = await client.from('atletik_kids_state').select('id').limit(1);
+        if (error) throw error;
+      } else if (cfg.backend === 'gas'){
+        const res = await fetch(cfg.gasUrl+'?action=ping&t='+Date.now());
+        if (!res.ok) throw new Error('GAS not reachable');
+      }
+      showNotification('Koneksi OK','success');
+    }catch(err){ showNotification('Gagal: '+(err.message||err),'error'); }
+  };
+
+  // ---- EXCEL TEMPLATE & IMPORT/EXPORT ----
+  window.downloadTemplateExcel = ()=>{
+    if (typeof XLSX === 'undefined'){ showNotification('Library Excel belum termuat','error'); return; }
+    const data = [
+      ['BIB','NISN','NAMA_ATLET','ASAL_SEKOLAH','KATEGORI(L/P)'],
+      ['001','0123456789','John Doe','SDN 01','L'],
+      ['002','0987654321','Jane Doe','SDN 02','P']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Peserta');
+    XLSX.writeFile(wb, 'template_peserta.xlsx');
+  };
+
+  window.handleImportExcel = (e)=>{
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      try{
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header:1 });
+        if (rows.length < 2){ showNotification('Excel kosong / format salah','error'); return; }
+
+        // Auto-detect kolom (support template lama: BIB,NAMA,SEKOLAH,KAT dan baru: BIB,NISN,NAMA,SEKOLAH,KAT)
+        const header = (rows[0] || []).map(h => String(h||'').trim().toUpperCase());
+        const findCol = (...keys) => {
+          for (let k of keys){
+            const idx = header.findIndex(h => h.includes(k));
+            if (idx !== -1) return idx;
+          }
+          return -1;
+        };
+        const cBib    = findCol('BIB');
+        const cNisn   = findCol('NISN');
+        const cName   = findCol('NAMA');
+        const cSchool = findCol('SEKOLAH','ASAL');
+        const cGender = findCol('KATEGORI','GENDER','L/P');
+
+        let count = 0;
+        for (let i=1; i<rows.length; i++){
+          const r = rows[i]; if (!r || r.length < 2) continue;
+          const bib    = cBib    >= 0 ? (r[cBib]||'').toString().trim() : '';
+          const nisn   = cNisn   >= 0 ? (r[cNisn]||'').toString().trim() : '';
+          const name   = cName   >= 0 ? (r[cName]||'').toString().trim() : '';
+          const school = cSchool >= 0 ? (r[cSchool]||'').toString().trim() : '';
+          const gRaw   = cGender >= 0 ? (r[cGender]||'').toString().trim().toUpperCase() : 'L';
+          const gender = (gRaw === 'P' || gRaw === 'PEREMPUAN' || gRaw === 'PUTRI') ? 'P' : 'L';
+          if (!name) continue;
+          const initialScores = {};
+          state.events.forEach(ev=>{ initialScores[ev.id] = {m:'',s:'',ms:'',status:''}; });
+          state.participants.push({
+            id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+            bib, nisn, name: formatTitleCase(name), school: formatTitleCase(school),
+            gender, scores: initialScores, createdAt: Date.now()
+          });
+          count++;
+        }
+        if (count > 0){
+          showNotification(`${count} peserta diimpor`,'success');
+          renderApp(); scheduleSync();
+        } else showNotification('Tidak ada data valid','error');
+      }catch(_){ showNotification('File Excel tidak valid','error'); }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  };
+
+  window.downloadReportExcel = ()=>{
+    if (typeof XLSX === 'undefined'){ showNotification('Library Excel belum termuat','error'); return; }
+    const results = getResults();
+    const wb = XLSX.utils.book_new();
+    const build = (data)=>{
+      const headers = ['RANK','BIB','NISN','NAMA','SEKOLAH', ...state.events.map(e=>e.name), 'TOTAL_WAKTU_MS','TOTAL_WAKTU','TOTAL_POIN','STATUS'];
+      const rows = [headers];
+      data.forEach(r=>{
+        rows.push([
+          r.hasDnf?'DNF':(r.totalPoints>0?r.finalRank:'-'),
+          r.bib||'-', r.nisn||'-', r.name, r.school,
+          ...state.events.map(e=>formatDisplayTime(r.scores?.[e.id])),
+          r.totalTime, formatTotalTime(r.totalTime, r.hasDnf), r.totalPoints,
+          r.hasDnf?'DNF':(r.eligible?'FINAL':'BELUM LENGKAP')
+        ]);
+      });
+      return rows;
+    };
+    if (results.putra.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(build(results.putra)), 'Putra');
+    if (results.putri.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(build(results.putri)), 'Putri');
+    if (!results.putra.length && !results.putri.length){
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Belum ada data']]), 'Kosong');
+    }
+    XLSX.writeFile(wb, `laporan_o2sn_${state.settings.kecamatan||'export'}.xlsx`);
+    showNotification('Ekspor Excel berhasil','success');
+  };
+
+  // ---- PRINT OFFICIAL REPORT ----
+  window.printOfficialReport = ()=>{
+    const results = getResults();
+    const win = window.open('','_blank');
+    const tableHtml = (data, cat) => `
+      <h3 class="cat-title">HASIL KATEGORI ${cat}</h3>
+      <table class="result-table">
+        <thead><tr>
+          <th>RANK</th><th>BIB</th><th>NAMA</th><th>SEKOLAH</th>
+          ${state.events.map(e=>`<th>${e.name}</th>`).join('')}
+          <th>TOTAL</th><th>POIN</th>
+        </tr></thead>
+        <tbody>
+          ${data.map(r=>`
+            <tr ${r.hasDnf?'class="dnf"':''}>
+              <td class="center"><b>${r.hasDnf?'DNF':(r.totalPoints>0?r.finalRank:'-')}</b></td>
+              <td class="center">${r.bib||'-'}</td>
+              <td><b>${r.name}</b></td>
+              <td>${r.school||''}</td>
+              ${state.events.map(e=>`<td class="center mono">${formatDisplayTime(r.scores?.[e.id])}</td>`).join('')}
+              <td class="center mono"><b>${formatTotalTime(r.totalTime, r.hasDnf)}</b></td>
+              <td class="center"><b>${r.totalPoints}</b></td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    const s = state.settings;
+    win.document.write(`
+      <!DOCTYPE html><html><head><title>Laporan O2SN — ${s.kecamatan||''}</title>
+      <style>
+        body { font-family:'Plus Jakarta Sans',sans-serif; padding:15mm; color:#0F172A; }
+        .kop { display:grid; grid-template-columns:30mm 1fr 30mm; align-items:center; gap:5mm; }
+        .kop img { width:25mm; height:25mm; object-fit:contain; }
+        .kop .center { text-align:center; }
+        .kop h2 { font-size:13px; font-weight:800; margin:0; letter-spacing:.5px; }
+        .kop .title { font-weight:900; font-size:16px; margin:6px 0 2px; text-transform:uppercase; }
+        .kop p { font-size:9px; font-weight:600; color:#475569; margin:0; }
+        .divider { border-top:3px solid #0F172A; margin:6px 30mm; padding-bottom:2px; }
+        .divider::after { content:""; display:block; border-top:1px solid #0F172A; margin-top:2px; }
+        .cat-title { margin-top:20px; border-left:5px solid #0F766E; padding-left:8px; font-size:13px; text-transform:uppercase; }
+        .result-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:11px; }
+        .result-table th, .result-table td { border:1px solid #CBD5E1; padding:6px 7px; }
+        .result-table th { background:#F1F5F9; font-weight:800; text-transform:uppercase; font-size:10px; }
+        .result-table tr.dnf { background:#FEF2F2; color:#991B1B; }
+        .center { text-align:center; }
+        .mono { font-family:ui-monospace,monospace; }
+        .footer { margin-top:32px; display:flex; justify-content:space-between; page-break-inside:avoid; }
+        .sig { width:230px; font-size:11px; }
+        .sig .name { margin-top:50px; font-weight:bold; text-decoration:underline; }
+        @media print { @page { margin:0 } body { padding:15mm } .no-print { display:none } }
+      </style></head><body>
+      <div class="kop">
+        <div><img src="${URL_LOGO_O2SN}" alt="O2SN"></div>
+        <div class="center">
+          <h2>PANITIA PELAKSANA</h2>
+          <div class="title">LAPORAN HASIL PERLOMBAAN</div>
+          <div class="title">KID'S ATHLETIC O2SN ${s.kecamatan||''}</div>
+          <div class="title">TAHUN ${s.tahun||''}</div>
+          <p>Sekretariat: ${s.sekretariat||''}</p>
+        </div>
+        <div><img src="${URL_LOGO_KKGO}" alt="KKGO" onerror="this.style.visibility='hidden'"></div>
+      </div>
+      <div class="divider"></div>
+      ${tableHtml(results.putra, 'PUTRA (LAKI-LAKI)')}
+      <div style="page-break-after: always;"></div>
+      ${tableHtml(results.putri, 'PUTRI (PEREMPUAN)')}
+      <div class="footer">
+        <div class="sig">
+          <p>Mengetahui,</p><p>Ketua Pelaksana O2SN</p>
+          <p class="name">${s.ketuaNama || '(......................)'}</p>
+          <p>NIP. ${s.ketuaNip || '......................'}</p>
+        </div>
+        <div class="sig">
+          <p>Jakarta, ${new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</p>
+          <p>Koordinator Cabor Kid's Athletic</p>
+          <p class="name">${s.koorNama || '(......................)'}</p>
+          <p>NIP. ${s.koorNip || '......................'}</p>
+        </div>
+      </div>
+      <div class="no-print" style="margin-top:20px; text-align:center;">
+        <button onclick="window.print()" style="padding:10px 22px; background:#0F766E; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">CETAK SEKARANG</button>
+      </div>
+      </body></html>`);
+    win.document.close();
+  };
+
+  // ============================================================
+  // BEFOREUNLOAD PROTECTION
+  // ============================================================
+  window.addEventListener('beforeunload', (e)=>{
+    if (state.runtime.pendingSyncCount > 0){
+      e.preventDefault();
+      e.returnValue = 'Masih ada perubahan yang belum tersinkron. Yakin keluar?';
+      return e.returnValue;
+    }
+  });
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  async function init(){
+    // Load config
+    try{
+      const raw = localStorage.getItem(LS_CFG);
+      if (raw) state.config = { ...state.config, ...JSON.parse(raw) };
+    }catch(_){}
+
+    // Pre-load Local
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) hydrateState(JSON.parse(raw));
+    }catch(_){}
+
+    renderApp();
+    await applyAdapter();
+  }
+
+  window.addEventListener('load', init);
+
+  </script>
+</body>
+</html>
