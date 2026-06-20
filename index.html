@@ -748,7 +748,7 @@
 
   // Default Supabase (dapat dioverride via Pengaturan → Backend)
   const DEFAULT_SUPABASE_URL = "https://kmqkofgzdkzdhrbapipy.supabase.co";
-  const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttcWtvZmd6ZGt6ZGhyYmFwaXB5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTg3NjQ2NCwiZXhwIjoyMDk3NDUyNDY0fQ.ShVHWD4aQ3qKSvSYrz2KfeBZ2OSxkZ3sq9uTBk-qHe8"; // user mengisi sendiri (anon key)
+  const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttcWtvZmd6ZGt6ZGhyYmFwaXB5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTg3NjQ2NCwiZXhwIjoyMDk3NDUyNDY0fQ.ShVHWD4aQ3qKSvSYrz2KfeBZ2OSxkZ3sq9uTBk-qHe8";
   const DEFAULT_GAS_URL      = "";
 
   const LS_KEY = "atletik_kids_state_v2";
@@ -760,8 +760,19 @@
     const hash = await crypto.subtle.digest('SHA-256', buf);
     return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
-  // Hash dari "admin" — untuk default credential
-  const DEFAULT_ADMIN_HASH = '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918';
+  
+  // PASSWORD BARU SECARA DEFAULT: O2snHebat2026
+  const DEFAULT_ADMIN_HASH = '521ce62c3e4cc04db8038bf347ef0e883e4740268ec2882f8087950bd49174df';
+
+  // Force local cache reset agar tidak membaca password lama 'admin' yang nyangkut di browser
+  try {
+    const isFirstRunAfterFix = !localStorage.getItem('atletik_v2_reset_done');
+    if (isFirstRunAfterFix) {
+      localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_CFG);
+      localStorage.setItem('atletik_v2_reset_done', 'true');
+    }
+  } catch(e) {}
 
   // ============================================================
   // STATE
@@ -982,9 +993,7 @@
 
       try{ unsubscribe(); }catch(_){}
       unsubscribe = state.runtime.adapter.subscribe((remote)=>{
-        // remote bisa {type:'state', data} atau {type:'score', data} atau plain object (local/gas poll)
         if (remote && remote.type === 'score'){
-          // Patch satu score saja — tidak perlu re-render seluruh state
           const row = remote.data;
           const p = state.participants.find(x=>x.id===row.participant_id);
           if (p){
@@ -1025,6 +1034,10 @@
     if (payload.settings && typeof payload.settings === 'object') {
       state.settings = { ...state.settings, ...payload.settings };
     }
+    // Proteksi tambahan: jika database mereturn password kosong atau lama akibat kegagalan sinkronisasi, paksa ke default aman
+    if (!state.settings.adminPasswordHash || state.settings.adminPasswordHash === '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918') {
+      state.settings.adminPasswordHash = DEFAULT_ADMIN_HASH;
+    }
     document.getElementById('public-updated').innerText =
       payload.updated_at ? new Date(payload.updated_at).toLocaleString('id-ID') :
       new Date().toLocaleString('id-ID');
@@ -1063,7 +1076,6 @@
     const isLocal = (label === 'LOCAL');
 
     if (isLocal){
-      // Netral — bukan online, bukan offline
       ping.className = 'absolute inline-flex h-full w-full rounded-full bg-slate-300 opacity-0';
       dot.className  = 'relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400';
       txt.innerText  = 'LOKAL';
@@ -1158,7 +1170,6 @@
   }
 
   function getResults(eventFilter){
-    // eventFilter: 'all' (default) → klasemen total; eventId → ranking nomor itu saja
     const singleEvent = (eventFilter && eventFilter !== 'all') ? eventFilter : null;
 
     const processGroup = (gender)=>{
@@ -1197,7 +1208,6 @@
         if (index>0 && p.totalTime===arr[index-1].totalTime && !p.hasDnf && !arr[index-1].hasDnf) {
           finalRank = arr[index-1].finalRank;
         }
-        // Poin: harus punya waktu valid & tidak DNF. Untuk mode total, semua event wajib lengkap.
         const eligible = p.hasAnyTime && !p.hasDnf && (singleEvent ? true : p.hasAllTimes);
         const totalPoints = eligible ? (numParts - finalRank + 1) : 0;
         return { ...p, finalRank, totalPoints, eligible };
@@ -1209,7 +1219,6 @@
 
   // ============================================================
   // UNIFIED LEADERBOARD GENERATOR
-  // Konsolidasi 2 fungsi lama (public & admin) → 1 fungsi
   // ============================================================
   function generateLeaderboard({ data, title, mode='public', accentColor='teal', eventFilter='all', searchQuery='' }){
     const cols = mode === 'public'
@@ -1220,10 +1229,8 @@
     const accentText = accentColor === 'pink' ? 'text-pink-700' : 'text-teal-700';
     const singleEvent = (eventFilter && eventFilter !== 'all') ? state.events.find(e=>e.id===eventFilter) : null;
 
-    // Filter event columns: kalau filter satu nomor, hanya tampilkan nomor itu
     const eventsToShow = singleEvent ? [singleEvent] : state.events;
 
-    // Apply search (public mode only)
     const q = (searchQuery||'').trim().toLowerCase();
     let filteredData = data;
     if (mode === 'public' && q){
@@ -1380,7 +1387,6 @@
 
   // ============================================================
   // RENDER: INPUT HASIL WAKTU
-  // Termasuk toggle DNF dan kolom menit opsional
   // ============================================================
   function renderInputHasilContainer(){
     const container = document.getElementById('input-hasil-container');
@@ -1390,7 +1396,6 @@
       return;
     }
 
-    // Sync checkbox
     const cb = document.getElementById('opt-show-minute');
     if (cb) cb.checked = !!state.settings.showMinuteColumn;
     const showMin = !!state.settings.showMinuteColumn;
@@ -1483,7 +1488,6 @@
       generateLeaderboard({ data:results.putra, title:'KLASEMEN PUTRA', mode:'public', accentColor:'teal', eventFilter:filter, searchQuery:search }) +
       generateLeaderboard({ data:results.putri, title:'KLASEMEN PUTRI', mode:'public', accentColor:'pink', eventFilter:filter, searchQuery:search });
 
-    // Sync search UI state
     const clearBtn = document.getElementById('public-search-clear');
     const hint = document.getElementById('public-search-hint');
     if (clearBtn) clearBtn.classList.toggle('hidden', !search);
@@ -1503,7 +1507,7 @@
   }
 
   // ============================================================
-  // RENDER: SETTINGS forms & previews
+  // RENDER: SETTINGS
   // ============================================================
   function renderPengaturan(){
     const s = state.settings;
@@ -1518,15 +1522,12 @@
     if (speedEl) speedEl.value = s.runningTextSpeed || '28';
     updatePengaturanPreview();
 
-    // Backend config form — safe set (skip kalau element belum ada di DOM)
     set('cfg-sb-url',  state.config.supabaseUrl);
     set('cfg-sb-key',  state.config.supabaseKey);
     set('cfg-sb-room', state.config.supabaseRoom || 'main');
 
-    // Akun petugas
     renderAkunList();
 
-    // Subtab visibility
     document.querySelectorAll('.pengaturan-content').forEach(c=>c.classList.add('hidden'));
     const a = document.getElementById('subtab-'+state.ui.activeSubTab);
     if (a) a.classList.remove('hidden');
@@ -1544,13 +1545,11 @@
     set('prev-ketua-nip',  'NIP. '+(s.ketuaNip||'-'));
     set('prev-koor-nama',  s.koorNama || '(Belum diisi)');
     set('prev-koor-nip',   'NIP. '+(s.koorNip||'-'));
-    // Logo previews
     const o2sn = document.getElementById('prev-logo-o2sn');
     if (o2sn) o2sn.src = URL_LOGO_O2SN;
     updateLogoKkgPreview();
   }
 
-  // Live preview untuk URL Logo KKG (dipanggil dari oninput)
   window.updateLogoKkgPreview = ()=>{
     const url   = (document.getElementById('set-logo-kkg')?.value || state.settings.logoKkgUrl || '').trim();
     const img   = document.getElementById('prev-logo-kkg');
@@ -1583,7 +1582,6 @@
     html += renderBtn('hasil','timer','Input Hasil Waktu');
 
     if (isAdmin){
-      // Submenu Hasil Pertandingan
       const hasilActive = ui.activeTab === 'hasil_pertandingan';
       html += `<div>
         <button onclick="toggleHasilMenu()" class="nav-btn ${hasilActive?'active':''}">
@@ -1599,7 +1597,6 @@
     }
 
     if (isAdmin){
-      // Submenu Pengaturan (admin saja)
       const setActive = ui.activeTab === 'pengaturan';
       html += `<div>
         <button onclick="toggleSettingsMenu()" class="nav-btn ${setActive?'active':''}">
@@ -1617,7 +1614,6 @@
       </div>`;
     }
 
-    // Role badge
     html += `<div class="mt-4 px-2 py-2 rounded-xl ${isAdmin?'bg-teal-50 border border-teal-200':'bg-amber-50 border border-amber-200'}">
       <div class="text-[9px] font-bold tracking-widest ${isAdmin?'text-teal-700':'text-amber-700'}">${isAdmin?'👑 ADMIN':'✏️ PETUGAS INPUT'}</div>
       <div class="text-[10px] font-bold text-ink mt-0.5">@${ui.currentUser||'-'}</div>
@@ -1677,7 +1673,7 @@
 
 
   // ============================================================
-  // ACTION HANDLERS (exposed to window for inline onclick)
+  // ACTION HANDLERS
   // ============================================================
   window.setActiveTab = (id)=>{
     state.ui.activeTab = id;
@@ -1710,12 +1706,10 @@
     renderApp();
   };
 
-  // ---- PUBLIC FILTER & SEARCH ----
   window.setPublicEventFilter = (id)=>{
     state.ui.publicEventFilter = id;
     renderPublicLeaderboards();
   };
-  // Debounced search to avoid re-render thrash on each keystroke
   let _searchDebounce = null;
   window.setPublicSearch = (val)=>{
     state.ui.publicSearch = val;
@@ -1729,7 +1723,6 @@
     renderPublicLeaderboards();
   };
 
-  // ---- LOGIN (with SHA-256) ----
   window.showLoginModal = ()=>{ document.getElementById('login-modal').classList.remove('hidden'); };
   window.hideLoginModal = ()=>{
     document.getElementById('login-modal').classList.add('hidden');
@@ -1749,7 +1742,6 @@
     const hash = await sha256(p);
     const err  = document.getElementById('login-error');
 
-    // Cek admin
     const adminHash = state.settings.adminPasswordHash || DEFAULT_ADMIN_HASH;
     if (u === 'admin' && hash === adminHash){
       state.ui.isLoggedIn = true;
@@ -1762,7 +1754,6 @@
       return;
     }
 
-    // Cek akun petugas
     const accounts = state.settings.accounts || [];
     const found = accounts.find(a=> a.username === u && a.passwordHash === hash);
     if (found){
@@ -1770,7 +1761,7 @@
       state.ui.role = 'petugas';
       state.ui.currentUser = found.username;
       window.hideLoginModal();
-      state.ui.activeTab = 'hasil';  // petugas langsung ke input hasil
+      state.ui.activeTab = 'hasil';
       renderApp();
       showNotification('Login sebagai Petugas · '+found.nama,'success');
       return;
@@ -1788,12 +1779,11 @@
     showNotification('Berhasil keluar','info');
   };
 
-  // ---- ACCOUNT MANAGEMENT ----
   window.addPetugasAccount = async (e)=>{
     e.preventDefault();
     const accounts = state.settings.accounts || [];
     if (accounts.length >= 10){
-      showNotification('Maksimal 10 akun petugas','error'); return;
+      showNotification('Maksales 10 akun petugas','error'); return;
     }
     const username = document.getElementById('new-akun-username').value.trim().toLowerCase();
     const password = document.getElementById('new-akun-password').value;
@@ -1852,7 +1842,6 @@
     if (window.lucide) lucide.createIcons({ nameAttr:'data-lucide' });
   }
 
-  // ---- RUNNING TEXT ----
   window.saveRunText = ()=>{
     const text  = document.getElementById('set-runtext').value.trim();
     const speed = document.getElementById('set-runtext-speed').value;
@@ -1873,12 +1862,10 @@
     track.innerText = text + '\u00A0\u00A0\u00A0\u00A0·\u00A0\u00A0\u00A0\u00A0' + text;
     track.style.animationDuration = speed + 's';
     wrap.classList.remove('hidden');
-    // Update preview di admin
     const pTrack = document.getElementById('runtext-preview-text');
     if (pTrack){ pTrack.innerText = track.innerText; pTrack.style.animationDuration = speed+'s'; }
   }
 
-  // Live preview update untuk running text
   document.addEventListener('input', (e)=>{
     if (e.target && (e.target.id === 'set-runtext' || e.target.id === 'set-runtext-speed')){
       const text  = document.getElementById('set-runtext')?.value.trim() || '';
@@ -1904,7 +1891,6 @@
     scheduleSync();
   };
 
-  // ---- PARTICIPANT CRUD ----
   window.addParticipant = (e)=>{
     e.preventDefault();
     const name = document.getElementById('newPartName').value.trim();
@@ -1968,14 +1954,12 @@
     showNotification('Data peserta diperbarui','success');
   };
 
-  // ---- EVENT CRUD ----
   window.addEvent = (e)=>{
     e.preventDefault();
     const n = document.getElementById('newEventName').value.trim();
     if (!n) return;
     state.events.push({ id:'e'+Date.now(), name:n.toUpperCase(), createdAt:Date.now() });
     document.getElementById('newEventName').value = '';
-    // Pastikan semua peserta dapat slot score untuk event baru
     state.participants.forEach(p=>{
       if (!p.scores) p.scores = {};
       if (!p.scores[state.events[state.events.length-1].id]) p.scores[state.events[state.events.length-1].id] = {m:'',s:'',ms:'',status:''};
@@ -1996,7 +1980,6 @@
     renderApp(); scheduleSync();
   };
 
-  // ---- TIME INPUT (debounced, with confirm-on-overwrite) ----
   const saveTimeouts = {};
   window.scheduleSaveTime = (pId, eId)=>{
     const key = `${pId}-${eId}`;
@@ -2006,7 +1989,6 @@
       const mEl = document.getElementById(`m-${pId}-${eId}`);
       const sEl = document.getElementById(`s-${pId}-${eId}`);
       const msEl= document.getElementById(`ms-${pId}-${eId}`);
-      // Jika fokus masih di group yang sama → tunda
       const active = document.activeElement;
       if (active === mEl || active === sEl || active === msEl) return;
       const newM  = showMin && mEl ? mEl.value : '';
@@ -2022,7 +2004,7 @@
     const p = state.participants[i];
     const eventName = state.events.find(e=>e.id===eId)?.name || 'Lomba';
     const old = p.scores?.[eId] || { m:'', s:'', ms:'', status:'' };
-    if (old.status === 'DNF') return;  // jangan timpa DNF lewat input field
+    if (old.status === 'DNF') return;
     const changed = (newM!==(old.m||'')) || (newS!==(old.s||'')) || (newMs!==(old.ms||''));
     const hadOld = !!(old.m || old.s || old.ms);
 
@@ -2056,7 +2038,6 @@
     const scoreData = { m, s, ms, status:'' };
     state.participants[i].scores[eId] = scoreData;
 
-    // Granular patch — hanya kirim 1 score row, bukan seluruh blob
     const actor = state.ui.currentUser || 'admin';
     if (state.runtime.adapter && state.runtime.adapter.saveScore){
       state.runtime.adapter.saveScore(pId, eId, scoreData, actor)
@@ -2064,7 +2045,7 @@
         .catch(err=>{ showNotification('Sync score gagal: '+(err.message||err),'error'); });
       state.runtime.pendingSyncCount++;
     } else {
-      scheduleSync(); // fallback local
+      scheduleSync();
     }
     if (state.ui.activeTab === 'hasil_pertandingan' && state.ui.activeHasilSubTab === 'rekap') renderAdminLeaderboards();
   }
@@ -2101,7 +2082,6 @@
     }
   };
 
-  // Toggle kolom menit
   document.addEventListener('change', (e)=>{
     if (e.target && e.target.id === 'opt-show-minute'){
       state.settings.showMinuteColumn = e.target.checked;
@@ -2110,7 +2090,6 @@
     }
   });
 
-  // ---- SETTINGS ----
   window.saveAppSettings = ()=>{
     const get = (id)=> (document.getElementById(id)?.value || '').trim();
     state.settings = { ...state.settings,
@@ -2140,8 +2119,7 @@
     scheduleSync();
   };
 
-  // ---- BACKEND CONFIG (Supabase only) ----
-  window.selectBackend = (kind)=>{ state.config.backend = kind; };  // legacy noop, retained for safety
+  window.selectBackend = (kind)=>{ state.config.backend = kind; };
   window.saveBackendConfig = async ()=>{
     const get = (id)=> (document.getElementById(id)?.value || '').trim();
     state.config.backend      = 'supabase';
@@ -2163,7 +2141,6 @@
     }catch(err){ showNotification('Gagal: '+(err.message||err),'error'); }
   };
 
-  // ---- EXCEL TEMPLATE & IMPORT/EXPORT ----
   window.downloadTemplateExcel = ()=>{
     if (typeof XLSX === 'undefined'){ showNotification('Library Excel belum termuat','error'); return; }
     const data = [
@@ -2187,7 +2164,6 @@
         const rows = XLSX.utils.sheet_to_json(ws, { header:1 });
         if (rows.length < 2){ showNotification('Excel kosong / format salah','error'); return; }
 
-        // Auto-detect kolom (support template lama: BIB,NAMA,SEKOLAH,KAT dan baru: BIB,NISN,NAMA,SEKOLAH,KAT)
         const header = (rows[0] || []).map(h => String(h||'').trim().toUpperCase());
         const findCol = (...keys) => {
           for (let k of keys){
@@ -2205,11 +2181,11 @@
         let count = 0;
         for (let i=1; i<rows.length; i++){
           const r = rows[i]; if (!r || r.length < 2) continue;
-          const bib    = cBib    >= 0 ? (r[cBib]||'').toString().trim() : '';
-          const nisn   = cNisn   >= 0 ? (r[cNisn]||'').toString().trim() : '';
-          const name   = cName   >= 0 ? (r[cName]||'').toString().trim() : '';
+          const bib = cBib >= 0 ? (r[cBib]||'').toString().trim() : '';
+          const nisn = cNisn >= 0 ? (r[cNisn]||'').toString().trim() : '';
+          const name = cName >= 0 ? (r[cName]||'').toString().trim() : '';
           const school = cSchool >= 0 ? (r[cSchool]||'').toString().trim() : '';
-          const gRaw   = cGender >= 0 ? (r[cGender]||'').toString().trim().toUpperCase() : 'L';
+          const gRaw = cGender >= 0 ? (r[cGender]||'').toString().trim().toUpperCase() : 'L';
           const gender = (gRaw === 'P' || gRaw === 'PEREMPUAN' || gRaw === 'PUTRI') ? 'P' : 'L';
           if (!name) continue;
           const initialScores = {};
@@ -2258,7 +2234,6 @@
     showNotification('Ekspor Excel berhasil','success');
   };
 
-  // ---- PRINT OFFICIAL REPORT ----
   window.printOfficialReport = ()=>{
     const results = getResults();
     const win = window.open('','_blank');
@@ -2344,9 +2319,6 @@
     win.document.close();
   };
 
-  // ============================================================
-  // BEFOREUNLOAD PROTECTION
-  // ============================================================
   window.addEventListener('beforeunload', (e)=>{
     if (state.runtime.pendingSyncCount > 0){
       e.preventDefault();
@@ -2359,13 +2331,11 @@
   // INIT
   // ============================================================
   async function init(){
-    // Load config
     try{
       const raw = localStorage.getItem(LS_CFG);
       if (raw) state.config = { ...state.config, ...JSON.parse(raw) };
     }catch(_){}
 
-    // Pre-load Local
     try{
       const raw = localStorage.getItem(LS_KEY);
       if (raw) hydrateState(JSON.parse(raw));
