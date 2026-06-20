@@ -499,14 +499,35 @@
                     <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">TAHUN</label><input type="text" id="set-tahun" class="field num"/></div>
                   </div>
                   <div><label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">ALAMAT SEKRETARIAT</label><input type="text" id="set-sekretariat" class="field"/></div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-500 mb-1 tracking-widest">URL LOGO KKG <span class="text-slate-400 font-semibold normal-case">(untuk laporan cetak & export, opsional)</span></label>
+                    <input type="url" id="set-logo-kkg" class="field font-mono text-xs" placeholder="https://contoh.com/logo-kkg.png" oninput="updateLogoKkgPreview()"/>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-1.5">Tip: upload logo ke Google Drive (set akses publik) atau ke repo GitHub, lalu salin direct URL-nya. Kosongkan untuk menyembunyikan logo KKG di laporan.</p>
+                  </div>
                   <button onclick="saveAppSettings()" class="btn-primary w-full">SIMPAN PERUBAHAN</button>
                 </div>
                 <div class="card p-6">
-                  <h3 class="text-xs font-bold text-slate-500 tracking-widest mb-4">PREVIEW</h3>
-                  <div id="prev-kop-title" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-sand">
+                  <h3 class="text-xs font-bold text-slate-500 tracking-widest mb-4">PREVIEW KOP</h3>
+                  <div id="prev-kop-title" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-sand mb-4">
                     <p class="text-xs font-bold text-ink leading-relaxed">LAPORAN HASIL PERLOMBAAN</p>
                     <p class="text-xs font-bold text-ink leading-relaxed">KID'S ATHLETIC O2SN —</p>
                     <p class="text-xs font-bold text-ink leading-relaxed">TAHUN —</p>
+                  </div>
+                  <div class="border border-dashed border-slate-200 rounded-xl p-4 bg-white">
+                    <p class="text-[10px] font-bold text-slate-500 tracking-widest mb-3">LOGO YANG TAMPIL DI LAPORAN</p>
+                    <div class="flex items-center justify-around gap-4">
+                      <div class="flex flex-col items-center gap-1">
+                        <img src="" id="prev-logo-o2sn" alt="O2SN" class="w-16 h-16 object-contain"/>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-widest">O2SN</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-1">
+                        <div id="prev-logo-kkg-wrap" class="w-16 h-16 flex items-center justify-center bg-slate-50 border border-dashed border-slate-300 rounded-lg">
+                          <img src="" id="prev-logo-kkg" alt="KKG" class="w-full h-full object-contain hidden"/>
+                          <i data-lucide="image-off" id="prev-logo-kkg-fallback" class="w-6 h-6 text-slate-300"></i>
+                        </div>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-widest">KKG PJOK</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -623,6 +644,9 @@
                 <div id="akun-list" class="space-y-2"></div>
               </div>
             </div>
+
+            <!-- SUBTAB: KEAMANAN -->
+            <div id="subtab-keamanan" class="pengaturan-content hidden">
               <div class="mb-6">
                 <h2 class="text-2xl font-extrabold text-ink flex items-center gap-3"><i data-lucide="shield" class="text-teal-700 w-7 h-7"></i> Keamanan Sistem</h2>
                 <p class="text-xs text-slate-500 font-bold tracking-wider mt-1">Password admin disimpan sebagai hash SHA-256 (tidak plaintext)</p>
@@ -723,8 +747,8 @@
   const URL_LOGO_KKGO = "https://raw.githubusercontent.com/djarotwidiyono22-design/KidsAtlhletic/main/KKGO.png";
 
   // Default Supabase (dapat dioverride via Pengaturan → Backend)
-  const DEFAULT_SUPABASE_URL = "https://lcfsrzqfacbfewtwgrcp.supabase.co";
-  const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjZnNyenFmYWNiZmV3dHdncmNwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTkwMTE1OSwiZXhwIjoyMDk3NDc3MTU5fQ._Uo4KSvPhUJFWfXsbDoQjGKleTlbTLMGsA7HKwLF4Ck"; // user mengisi sendiri (anon key)
+  const DEFAULT_SUPABASE_URL = "https://kmqkofgzdkzdhrbapipy.supabase.co";
+  const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImttcWtvZmd6ZGt6ZGhyYmFwaXB5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTg3NjQ2NCwiZXhwIjoyMDk3NDUyNDY0fQ.ShVHWD4aQ3qKSvSYrz2KfeBZ2OSxkZ3sq9uTBk-qHe8"; // user mengisi sendiri (anon key)
   const DEFAULT_GAS_URL      = "";
 
   const LS_KEY = "atletik_kids_state_v2";
@@ -752,8 +776,9 @@
       ketuaNama:'', ketuaNip:'', koorNama:'', koorNip:'',
       kecamatan:'DKI JAKARTA', tahun:'2026',
       sekretariat:'KKG PJOK Provinsi DKI Jakarta',
+      logoKkgUrl: '',       // URL logo KKG PJOK untuk laporan cetak (opsional)
       adminPasswordHash: DEFAULT_ADMIN_HASH,
-      accounts: [],         // [{username, passwordHash, nama, role:'petugas'}] max 10
+      accounts: [],
       runningText: '',
       runningTextSpeed: '28',
       publicColumns:{ rank:true, bib:true, participant:true, events:true, totalTime:true, totalPoints:true },
@@ -1488,24 +1513,15 @@
     set('set-kecamatan',  s.kecamatan); set('set-tahun',     s.tahun);
     set('set-sekretariat',s.sekretariat);
     set('set-runtext',    s.runningText || '');
+    set('set-logo-kkg',   s.logoKkgUrl  || '');
     const speedEl = document.getElementById('set-runtext-speed');
     if (speedEl) speedEl.value = s.runningTextSpeed || '28';
     updatePengaturanPreview();
 
-    // Backend config form
-    document.getElementById('cfg-sb-url').value  = state.config.supabaseUrl  || '';
-    document.getElementById('cfg-sb-key').value  = state.config.supabaseKey  || '';
-    document.getElementById('cfg-sb-room').value = state.config.supabaseRoom || 'main';
-    document.getElementById('cfg-gas-url').value = state.config.gasUrl       || '';
-    document.querySelectorAll('.backend-pill').forEach(b=>{
-      const isActive = b.dataset.backend === state.config.backend;
-      b.classList.toggle('bg-teal-700', isActive);
-      b.classList.toggle('text-white', isActive);
-      b.classList.toggle('border-teal-700', isActive);
-      b.classList.toggle('text-slate-600', !isActive);
-    });
-    document.getElementById('cfg-supabase').classList.toggle('hidden', state.config.backend !== 'supabase');
-    document.getElementById('cfg-gas').classList.toggle('hidden', state.config.backend !== 'gas');
+    // Backend config form — safe set (skip kalau element belum ada di DOM)
+    set('cfg-sb-url',  state.config.supabaseUrl);
+    set('cfg-sb-key',  state.config.supabaseKey);
+    set('cfg-sb-room', state.config.supabaseRoom || 'main');
 
     // Akun petugas
     renderAkunList();
@@ -1528,7 +1544,23 @@
     set('prev-ketua-nip',  'NIP. '+(s.ketuaNip||'-'));
     set('prev-koor-nama',  s.koorNama || '(Belum diisi)');
     set('prev-koor-nip',   'NIP. '+(s.koorNip||'-'));
+    // Logo previews
+    const o2sn = document.getElementById('prev-logo-o2sn');
+    if (o2sn) o2sn.src = URL_LOGO_O2SN;
+    updateLogoKkgPreview();
   }
+
+  // Live preview untuk URL Logo KKG (dipanggil dari oninput)
+  window.updateLogoKkgPreview = ()=>{
+    const url   = (document.getElementById('set-logo-kkg')?.value || state.settings.logoKkgUrl || '').trim();
+    const img   = document.getElementById('prev-logo-kkg');
+    const fb    = document.getElementById('prev-logo-kkg-fallback');
+    if (!img || !fb) return;
+    if (!url){ img.classList.add('hidden'); fb.classList.remove('hidden'); return; }
+    img.src = url;
+    img.onload  = ()=>{ img.classList.remove('hidden'); fb.classList.add('hidden'); };
+    img.onerror = ()=>{ img.classList.add('hidden');    fb.classList.remove('hidden'); };
+  };
 
   // ============================================================
   // RENDER: SIDEBAR + TABS
@@ -2080,14 +2112,16 @@
 
   // ---- SETTINGS ----
   window.saveAppSettings = ()=>{
+    const get = (id)=> (document.getElementById(id)?.value || '').trim();
     state.settings = { ...state.settings,
-      ketuaNama:    document.getElementById('set-ketua-nama').value.trim(),
-      ketuaNip:     document.getElementById('set-ketua-nip').value.trim(),
-      koorNama:     document.getElementById('set-koor-nama').value.trim(),
-      koorNip:      document.getElementById('set-koor-nip').value.trim(),
-      kecamatan:   (document.getElementById('set-kecamatan').value || '').trim().toUpperCase(),
-      tahun:        document.getElementById('set-tahun').value.trim(),
-      sekretariat:  document.getElementById('set-sekretariat').value.trim()
+      ketuaNama:   get('set-ketua-nama'),
+      ketuaNip:    get('set-ketua-nip'),
+      koorNama:    get('set-koor-nama'),
+      koorNip:     get('set-koor-nip'),
+      kecamatan:   get('set-kecamatan').toUpperCase(),
+      tahun:       get('set-tahun'),
+      sekretariat: get('set-sekretariat'),
+      logoKkgUrl:  get('set-logo-kkg')
     };
     updatePengaturanPreview();
     showNotification('Pengaturan disimpan','success');
@@ -2106,40 +2140,25 @@
     scheduleSync();
   };
 
-  // ---- BACKEND CONFIG ----
-  window.selectBackend = (kind)=>{
-    state.config.backend = kind;
-    document.querySelectorAll('.backend-pill').forEach(b=>{
-      const isActive = b.dataset.backend === kind;
-      b.classList.toggle('bg-teal-700', isActive);
-      b.classList.toggle('text-white', isActive);
-      b.classList.toggle('border-teal-700', isActive);
-      b.classList.toggle('text-slate-600', !isActive);
-    });
-    document.getElementById('cfg-supabase').classList.toggle('hidden', kind !== 'supabase');
-    document.getElementById('cfg-gas').classList.toggle('hidden', kind !== 'gas');
-  };
+  // ---- BACKEND CONFIG (Supabase only) ----
+  window.selectBackend = (kind)=>{ state.config.backend = kind; };  // legacy noop, retained for safety
   window.saveBackendConfig = async ()=>{
-    state.config.supabaseUrl  = document.getElementById('cfg-sb-url').value.trim();
-    state.config.supabaseKey  = document.getElementById('cfg-sb-key').value.trim();
-    state.config.supabaseRoom = document.getElementById('cfg-sb-room').value.trim() || 'main';
-    state.config.gasUrl       = document.getElementById('cfg-gas-url').value.trim();
+    const get = (id)=> (document.getElementById(id)?.value || '').trim();
+    state.config.backend      = 'supabase';
+    state.config.supabaseUrl  = get('cfg-sb-url');
+    state.config.supabaseKey  = get('cfg-sb-key');
+    state.config.supabaseRoom = get('cfg-sb-room') || 'main';
     localStorage.setItem(LS_CFG, JSON.stringify(state.config));
     await applyAdapter();
-    showNotification('Konfigurasi backend tersimpan','success');
+    showNotification('Konfigurasi Supabase tersimpan','success');
   };
   window.testBackendConnection = async ()=>{
     const cfg = state.config;
     try{
-      if (cfg.backend === 'supabase'){
-        if (!window.supabase) throw new Error('Library supabase belum termuat');
-        const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
-        const { error } = await client.from('atletik_kids_state').select('id').limit(1);
-        if (error) throw error;
-      } else if (cfg.backend === 'gas'){
-        const res = await fetch(cfg.gasUrl+'?action=ping&t='+Date.now());
-        if (!res.ok) throw new Error('GAS not reachable');
-      }
+      if (!window.supabase) throw new Error('Library supabase belum termuat');
+      const client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
+      const { error } = await client.from('atletik_kids_state').select('id').limit(1);
+      if (error) throw error;
       showNotification('Koneksi OK','success');
     }catch(err){ showNotification('Gagal: '+(err.message||err),'error'); }
   };
@@ -2299,7 +2318,7 @@
           <div class="title">TAHUN ${s.tahun||''}</div>
           <p>Sekretariat: ${s.sekretariat||''}</p>
         </div>
-        <div><img src="${URL_LOGO_KKGO}" alt="KKGO" onerror="this.style.visibility='hidden'"></div>
+        <div>${s.logoKkgUrl ? `<img src="${s.logoKkgUrl}" alt="KKG" onerror="this.style.visibility='hidden'">` : ''}</div>
       </div>
       <div class="divider"></div>
       ${tableHtml(results.putra, 'PUTRA (LAKI-LAKI)')}
